@@ -117,7 +117,7 @@ button{cursor:pointer}
 <div class="sheet-wrap" id="sheetWrap"><div class="sheet"><div class="handle"></div><div id="sheetContent"></div></div></div>
 
 <script>
-const STORAGE_KEY='academicCatThesisWorkbenchV1';
+const STORAGE_KEY='academicCatThesisWorkbenchV2';
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -142,6 +142,9 @@ const defaults={
   literature:[],
   figures:[],
   milestones:[],
+  todos:[],
+  versions:[],
+  defense:[],
   focusLogs:[]
 };
 let state=load();
@@ -200,6 +203,7 @@ function renderHome(){
   const dleft=Math.max(0,daysBetween(iso(),state.settings.defenseDate));
   const unresolved=state.problems.filter(x=>x.status!=='已解决').length;
   const pending=state.feedback.filter(x=>x.status!=='已完成').length;
+  const todoPending=state.todos.filter(x=>!x.done).length;
   $('#view-home').innerHTML=`
   <div class="hero">
     <div class="hero-top"><div><div class="eyebrow">论文总进度</div><div class="big">${fmt(total)} <small>/ ${fmt(goal)} 字</small></div></div><div style="font-weight:800">${p}%</div></div>
@@ -218,6 +222,8 @@ function renderHome(){
     <button onclick="problemForm()"><div class="iconbox">?</div><strong>记录问题</strong><span>${unresolved} 个问题待闭环</span></button>
     <button onclick="literatureForm()"><div class="iconbox">▭</div><strong>文献整理</strong><span>${state.literature.length} 篇已录入</span></button>
     <button onclick="feedbackForm()"><div class="iconbox">✓</div><strong>导师意见</strong><span>${pending} 项待修改</span></button>
+    <button onclick="todoForm()"><div class="iconbox">☐</div><strong>今日待办</strong><span>${todoPending} 项待完成</span></button>
+    <button onclick="resourceTab='defense';go('resources')"><div class="iconbox">◇</div><strong>答辩准备</strong><span>${state.defense.length} 项已记录</span></button>
   </div>
   <div class="section-title"><h2>最近动态</h2><span class="sub">写作 / 问题 / 修改</span></div>
   ${recentActivity()}
@@ -227,6 +233,8 @@ function renderHome(){
     <button class="pill-btn" onclick="exportBackup()">导出备份</button>
     <button class="pill-btn" onclick="importBackup()">导入备份</button>
     <button class="pill-btn" onclick="milestoneForm()">新增节点</button>
+    <button class="pill-btn" onclick="versionForm()">记录版本</button>
+    <button class="pill-btn" onclick="defenseForm()">答辩准备</button>
   </div>`;
 }
 function recentActivity(){
@@ -234,6 +242,9 @@ function recentActivity(){
   state.writingLogs.forEach(x=>items.push({date:x.date,title:`写作 +${x.words} 字`,meta:x.note||chapterTitle(x.chapterId)}));
   state.problems.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`问题：${x.title}`,meta:`${x.status} · ${x.type||'未分类'}`}));
   state.feedback.forEach(x=>items.push({date:x.completedAt||x.createdAt,title:`修改：${x.title}`,meta:`${x.status} · ${x.source||'未注明来源'}`}));
+  state.todos.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`待办：${x.title}`,meta:x.done?'已完成':'待完成'}));
+  state.versions.forEach(x=>items.push({date:x.date,title:`版本：${x.name}`,meta:x.stage||'版本记录'}));
+  state.defense.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`答辩：${x.title}`,meta:x.status||'待准备'}));
   items.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
   if(!items.length)return `<div class="empty">还没有记录。今天写第一笔，就从这里开始。</div>`;
   return items.slice(0,5).map(x=>`<div class="card"><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.date)} · ${esc(x.meta)}</div></div>`).join('');
@@ -270,20 +281,28 @@ function renderProblems(){
 }
 function renderResources(){
   const tabs=[
-    ['literature','文献'],['feedback','修改'],['figures','图表'],['milestones','节点']
+    ['literature','文献'],['feedback','修改'],['todos','待办'],['figures','图表'],
+    ['milestones','节点'],['versions','版本'],['defense','答辩']
   ];
   let body='';
   if(resourceTab==='literature'){
     body=state.literature.map(x=>`<div class="card" onclick="literatureForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待阅读')}</div><div class="meta">${esc(x.authors||'')} ${esc(x.year||'')} · 用于：${esc(x.usedIn||'未指定')}</div>${x.notes?`<div class="meta">${esc(x.notes).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有文献。可以把“读过什么、能放哪一章、核心观点”记在这里。</div>';
   }else if(resourceTab==='feedback'){
     body=state.feedback.map(x=>`<div class="card" onclick="feedbackForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status)}</div><div class="meta">来源：${esc(x.source||'')} · ${esc(x.chapter||'未指定章节')} · 优先级：${esc(x.priority||'中')}</div>${x.detail?`<div class="meta">${esc(x.detail).slice(0,95)}</div>`:''}</div>`).join('')||'<div class="empty">还没有修改意见。导师意见、自查问题、格式规范都可以放这里。</div>';
+  }else if(resourceTab==='todos'){
+    const sorted=state.todos.slice().sort((a,b)=>(a.done===b.done?String(a.due||'9999').localeCompare(String(b.due||'9999')):a.done-b.done));
+    body=sorted.map(x=>`<div class="card" onclick="todoForm('${x.id}')"><div class="row"><div class="title">${x.done?'✓ ':''}${esc(x.title)}</div>${statusChip(x.done?'已完成':'待完成')}</div><div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.priority||'中')}优先级${x.due?' · 截止 '+esc(x.due):''}</div>${x.notes?`<div class="meta">${esc(x.notes).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有待办。把“今天要写什么、要补什么、要改什么”记在这里。</div>';
   }else if(resourceTab==='figures'){
     body=state.figures.map(x=>`<div class="card" onclick="figureForm('${x.id}')"><div class="row"><div class="title">${esc(x.no||'未编号')} ${esc(x.title)}</div>${statusChip(x.status||'待制作')}</div><div class="meta">${esc(x.kind||'图')} · ${esc(x.chapter||'未指定章节')}</div>${x.notes?`<div class="meta">${esc(x.notes)}</div>`:''}</div>`).join('')||'<div class="empty">还没有图表清单。把“图号、名称、是否完成、是否正文引用”都记下来。</div>';
+  }else if(resourceTab==='milestones'){
+    body=state.milestones.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(x=>`<div class="card" onclick="milestoneForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待完成')}</div><div class="meta">${esc(x.date||'未定日期')} ${x.date?`· 距今 ${daysBetween(iso(),x.date)} 天`:''}</div></div>`).join('')||'<div class="empty">还没有时间节点。可以添加初稿、预答辩、送审、答辩、定稿等。</div>';
+  }else if(resourceTab==='versions'){
+    body=state.versions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<div class="card" onclick="versionForm('${x.id}')"><div class="row"><div class="title">${esc(x.name)}</div><span class="chip blue">${esc(x.date||'')}</span></div><div class="meta">${esc(x.stage||'未分类')} · ${esc(x.note||'无说明')}</div></div>`).join('')||'<div class="empty">还没有版本记录。每次形成重要稿件时记一笔，避免“哪个才是最新版”。</div>';
   }else{
-    body=state.milestones.sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(x=>`<div class="card" onclick="milestoneForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待完成')}</div><div class="meta">${esc(x.date||'未定日期')} ${x.date?`· 距今 ${daysBetween(iso(),x.date)} 天`:''}</div></div>`).join('')||'<div class="empty">还没有时间节点。可以添加初稿、预答辩、送审、答辩、定稿等。</div>';
+    body=state.defense.map(x=>`<div class="card" onclick="defenseForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待准备')}</div><div class="meta">${esc(x.type||'答辩事项')}${x.answer?' · 已记录答案/要点':''}</div>${x.answer?`<div class="meta">${esc(x.answer).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有答辩准备记录。可记录PPT、陈述稿、老师可能提问、回答要点和材料清单。</div>';
   }
   $('#view-resources').innerHTML=`
-    <div class="section-title" style="margin-top:2px"><h2>资料与修改</h2><span class="sub">论文全流程清单</span></div>
+    <div class="section-title" style="margin-top:2px"><h2>资料与流程</h2><span class="sub">论文全流程清单</span></div>
     <div class="tabs">${tabs.map(t=>`<button class="${resourceTab===t[0]?'active':''}" onclick="resourceTab='${t[0]}';renderResources()">${t[1]}</button>`).join('')}</div>
     ${body}`;
 }
@@ -299,27 +318,52 @@ function weekData(){
   }
   return arr;
 }
+function monthData(){
+  const now=new Date(), y=now.getFullYear(), m=now.getMonth();
+  const days=new Date(y,m+1,0).getDate();
+  const buckets=[0,0,0,0,0,0];
+  state.writingLogs.forEach(x=>{
+    const d=new Date(x.date+'T00:00:00');
+    if(d.getFullYear()===y && d.getMonth()===m){
+      const idx=Math.min(5,Math.floor((d.getDate()-1)/5));
+      buckets[idx]+=Number(x.words||0);
+    }
+  });
+  return buckets.map((v,i)=>({label:i<5?`${i*5+1}-${i*5+5}日`:`26-${days}日`,value:v}));
+}
 function renderStats(){
-  const wk=weekData(), max=Math.max(1,...wk.map(x=>x.value));
+  const wk=weekData(), wmax=Math.max(1,...wk.map(x=>x.value));
+  const mon=monthData(), mmax=Math.max(1,...mon.map(x=>x.value));
   const solved=state.problems.filter(x=>x.status==='已解决').length;
   const feedbackDone=state.feedback.filter(x=>x.status==='已完成').length;
+  const todoDone=state.todos.filter(x=>x.done).length;
   const figDone=state.figures.filter(x=>x.status==='已完成').length;
+  const defenseDone=state.defense.filter(x=>x.status==='已完成').length;
   const focusCount=state.focusLogs.length;
+  const focusMinutes=state.focusLogs.reduce((s,x)=>s+Number(x.minutes||0),0);
   const types={};state.problems.forEach(x=>types[x.type||'未分类']=(types[x.type||'未分类']||0)+1);
   const tmax=Math.max(1,...Object.values(types));
+  const monthWords=mon.reduce((s,x)=>s+x.value,0);
   $('#view-stats').innerHTML=`
-    <div class="section-title" style="margin-top:2px"><h2>统计总览</h2><span class="sub">所有记录一页看完</span></div>
+    <div class="section-title" style="margin-top:2px"><h2>统计总览</h2><span class="sub">所有模块一页看完</span></div>
     <div class="chart-card"><div class="row"><div class="title">本周写作字数</div><div class="meta">单位：字</div></div>
-      <div class="bar-chart">${wk.map((x,i)=>`<div class="bar-wrap"><div class="bar ${i===6?'gold':''}" style="height:${Math.max(2,x.value/max*110)}px"><span class="bar-val">${x.value}</span></div><div class="bar-label">周${x.label}</div></div>`).join('')}</div>
+      <div class="bar-chart">${wk.map((x,i)=>`<div class="bar-wrap"><div class="bar ${i===6?'gold':''}" style="height:${Math.max(2,x.value/wmax*110)}px"><span class="bar-val">${x.value}</span></div><div class="bar-label">周${x.label}</div></div>`).join('')}</div>
+    </div>
+    <div class="chart-card"><div class="row"><div class="title">本月写作趋势</div><div class="meta">本月 ${fmt(monthWords)} 字</div></div>
+      <div class="bar-chart">${mon.map((x,i)=>`<div class="bar-wrap"><div class="bar ${i===mon.length-1?'gold':''}" style="height:${Math.max(2,x.value/mmax*110)}px"><span class="bar-val">${x.value}</span></div><div class="bar-label">${x.label}</div></div>`).join('')}</div>
     </div>
     <div class="summary-grid">
       <div class="summary"><div class="l">累计字数</div><div class="n">${fmt(totalWords())}</div></div>
-      <div class="summary"><div class="l">累计专注</div><div class="n">${focusCount}<small>次</small></div></div>
+      <div class="summary"><div class="l">专注次数</div><div class="n">${focusCount}<small>次</small></div></div>
+      <div class="summary"><div class="l">专注时长</div><div class="n">${fmt(focusMinutes)}<small>分</small></div></div>
       <div class="summary"><div class="l">问题总数</div><div class="n">${state.problems.length}</div></div>
       <div class="summary"><div class="l">已解决问题</div><div class="n">${solved}</div></div>
       <div class="summary"><div class="l">文献已整理</div><div class="n">${state.literature.length}<small>篇</small></div></div>
-      <div class="summary"><div class="l">已完成修改</div><div class="n">${feedbackDone}<small>项</small></div></div>
+      <div class="summary"><div class="l">修改已完成</div><div class="n">${feedbackDone}<small>项</small></div></div>
+      <div class="summary"><div class="l">待办已完成</div><div class="n">${todoDone}<small>项</small></div></div>
       <div class="summary"><div class="l">图表已完成</div><div class="n">${figDone}<small>项</small></div></div>
+      <div class="summary"><div class="l">论文版本</div><div class="n">${state.versions.length}<small>版</small></div></div>
+      <div class="summary"><div class="l">答辩准备完成</div><div class="n">${defenseDone}<small>项</small></div></div>
       <div class="summary"><div class="l">连续写作</div><div class="n">${streak()}<small>天</small></div></div>
     </div>
     <div class="section-title"><h2>问题类型分布</h2><span class="sub">看自己最常卡在哪里</span></div>
@@ -361,8 +405,11 @@ function renderAll(){
     else if(currentView==='resources'){
       if(resourceTab==='literature') literatureForm();
       if(resourceTab==='feedback') feedbackForm();
+      if(resourceTab==='todos') todoForm();
       if(resourceTab==='figures') figureForm();
       if(resourceTab==='milestones') milestoneForm();
+      if(resourceTab==='versions') versionForm();
+      if(resourceTab==='defense') defenseForm();
     } else writingLogForm();
   };
 }
@@ -480,6 +527,48 @@ function milestoneForm(id){
 function saveMilestone(id){
   const v={id:id||uid(),title:$('#f-title').value.trim(),date:$('#f-date').value,status:$('#f-status').value};
   if(!v.title)return alert('请填写节点名称');const i=state.milestones.findIndex(x=>x.id===id);if(i>=0)state.milestones[i]=v;else state.milestones.push(v);closeSheet();save();
+}
+
+function todoForm(id){
+  const x=state.todos.find(v=>v.id===id)||{title:'',chapter:'',priority:'中',due:'',notes:'',done:false,createdAt:iso()};
+  openSheet(`<h3>${id?'编辑待办':'新增论文待办'}</h3>
+    <div class="field"><label>待办事项</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：补写4.2节结果说明"></div>
+    <div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter||'')}"></div><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div></div>
+    <div class="field"><label>截止日期</label><input id="f-due" type="date" value="${esc(x.due||'')}"></div>
+    <div class="field"><label>说明</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
+    <div class="field"><label>状态</label><select id="f-done"><option value="0" ${!x.done?'selected':''}>待完成</option><option value="1" ${x.done?'selected':''}>已完成</option></select></div>
+    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('todos','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveTodo('${id}')">保存</button></div>`);
+}
+function saveTodo(id){
+  const old=state.todos.find(x=>x.id===id),done=$('#f-done').value==='1';
+  const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),priority:$('#f-priority').value,due:$('#f-due').value,notes:$('#f-notes').value.trim(),done,createdAt:old?.createdAt||iso(),updatedAt:iso()};
+  if(!v.title)return alert('请填写待办事项');const i=state.todos.findIndex(x=>x.id===id);if(i>=0)state.todos[i]=v;else state.todos.push(v);closeSheet();save();
+}
+function versionForm(id){
+  const x=state.versions.find(v=>v.id===id)||{name:'',date:iso(),stage:'章节稿',note:''};
+  openSheet(`<h3>${id?'编辑版本':'新增论文版本'}</h3>
+    <div class="field"><label>版本名称</label><input id="f-name" value="${esc(x.name)}" placeholder="例如：V3 导师修改稿"></div>
+    <div class="form2"><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>阶段</label><select id="f-stage">${['章节稿','初稿','导师修改稿','预答辩稿','送审稿','答辩稿','定稿','其他'].map(s=>`<option ${x.stage===s?'selected':''}>${s}</option>`)}</select></div></div>
+    <div class="field"><label>本版本主要变化</label><textarea id="f-note" placeholder="例如：补充第4章结果分析，统一图题格式">${esc(x.note||'')}</textarea></div>
+    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('versions','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveVersion('${id}')">保存</button></div>`);
+}
+function saveVersion(id){
+  const v={id:id||uid(),name:$('#f-name').value.trim(),date:$('#f-date').value,stage:$('#f-stage').value,note:$('#f-note').value.trim()};
+  if(!v.name)return alert('请填写版本名称');const i=state.versions.findIndex(x=>x.id===id);if(i>=0)state.versions[i]=v;else state.versions.push(v);closeSheet();save();
+}
+function defenseForm(id){
+  const x=state.defense.find(v=>v.id===id)||{title:'',type:'可能提问',status:'待准备',answer:'',notes:'',createdAt:iso(),updatedAt:iso()};
+  openSheet(`<h3>${id?'编辑答辩准备':'新增答辩准备'}</h3>
+    <div class="field"><label>事项 / 问题</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：为什么选择随机森林模型？"></div>
+    <div class="form2"><div class="field"><label>类型</label><select id="f-type">${['答辩PPT','自我陈述','可能提问','回答要点','材料清单','模拟答辩','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>状态</label><select id="f-status">${['待准备','准备中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div>
+    <div class="field"><label>回答 / 核心要点</label><textarea id="f-answer" placeholder="把回答框架、数据、依据或讲稿要点写在这里">${esc(x.answer||'')}</textarea></div>
+    <div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
+    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('defense','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveDefense('${id}')">保存</button></div>`);
+}
+function saveDefense(id){
+  const old=state.defense.find(x=>x.id===id);
+  const v={id:id||uid(),title:$('#f-title').value.trim(),type:$('#f-type').value,status:$('#f-status').value,answer:$('#f-answer').value.trim(),notes:$('#f-notes').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso()};
+  if(!v.title)return alert('请填写答辩事项');const i=state.defense.findIndex(x=>x.id===id);if(i>=0)state.defense[i]=v;else state.defense.push(v);closeSheet();save();
 }
 function settingsForm(){
   const s=state.settings;
