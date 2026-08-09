@@ -82,7 +82,30 @@ button{cursor:pointer}
 .notice{font-size:11px;color:var(--muted);background:#efeae1;border-radius:12px;padding:10px 12px;line-height:1.6}
 .settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .pill-btn{border:1px solid var(--line);background:var(--card);border-radius:14px;padding:12px;color:var(--navy);font-weight:700}
-@media (max-width:390px){.stats4{grid-template-columns:repeat(2,1fr)}}
+
+.top-search{margin-left:auto;width:38px;height:38px;border:1px solid var(--line);border-radius:12px;background:var(--card);color:var(--navy);font-size:22px;display:flex;align-items:center;justify-content:center}
+.health{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px}
+.health .hcard{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px}
+.health .hlabel{font-size:10px;color:var(--muted)}.health .hnum{font-size:17px;font-weight:850;color:var(--navy);margin-top:4px;line-height:1.35}
+.goodtxt{color:var(--good)!important}.warntxt{color:var(--warn)!important}.badtxt{color:var(--bad)!important}
+.due-badge{font-size:10px;padding:4px 7px;border-radius:99px;background:#f2eee7;color:var(--muted);white-space:nowrap}
+.due-badge.overdue{background:#fbe8e5;color:var(--bad)}.due-badge.today{background:#fff2dc;color:var(--warn)}
+.searchbox{position:sticky;top:-14px;background:var(--card);padding:2px 0 9px;z-index:2}.searchbox input{width:100%;border:1px solid var(--line);background:#fff;padding:12px 13px;border-radius:13px;font-size:16px}
+.checkrow{display:flex;gap:10px;align-items:flex-start}.checkrow input{width:20px;height:20px;margin-top:1px;flex:0 0 auto}
+.calendar-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}.calendar-head button{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:6px 10px;color:var(--navy)}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:5px}.cal-week{font-size:9px;color:var(--muted);text-align:center;padding:4px 0}
+.cal-day{aspect-ratio:1;border:1px solid var(--line);background:#fff;border-radius:9px;font-size:10px;color:var(--muted);position:relative;display:flex;align-items:center;justify-content:center}.cal-day.empty{border-color:transparent;background:transparent}
+.cal-day.lv1{background:#edf1f7}.cal-day.lv2{background:#cfd9e8;color:#27466f}.cal-day.lv3{background:#91a8c8;color:#fff}.cal-day.lv4{background:#173d75;color:#fff}.cal-day.today{outline:2px solid var(--gold)}.cal-dot{position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:var(--gold)}
+.alert-card{border-left:4px solid var(--warn)}.alert-card.danger{border-left-color:var(--bad)}
+.tag{display:inline-block;font-size:9px;padding:3px 6px;border-radius:7px;background:#eef2f8;color:var(--navy);margin:3px 3px 0 0}
+.star{color:var(--gold);font-size:16px}.section-mini{background:#f8f5ef;border:1px solid var(--line);border-radius:13px;padding:10px;margin-top:8px}
+.segment{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:12px}.segment button{border:1px solid var(--line);background:var(--card);color:var(--muted);border-radius:10px;padding:8px 3px;font-size:10px}.segment button.active{background:var(--navy);border-color:var(--navy);color:#fff;font-weight:800}
+.spark{display:flex;align-items:flex-end;gap:5px;height:95px;padding-top:18px;border-bottom:1px solid var(--line)}.spark .bar-wrap{height:100%;display:flex;flex-direction:column;justify-content:flex-end}.spark .bar{width:100%}
+.progress-ring{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:conic-gradient(var(--navy) var(--ring),#e9e5dd 0);position:relative}.progress-ring:after{content:"";position:absolute;inset:6px;background:var(--card);border-radius:50%}.progress-ring b{position:relative;z-index:1;font-size:11px;color:var(--navy)}
+.mini-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}.mini-cell{background:#f8f5ef;border-radius:12px;padding:9px;text-align:center}.mini-cell b{font-size:16px;color:var(--navy);display:block}.mini-cell span{font-size:9px;color:var(--muted)}
+.badge-num{display:inline-flex;min-width:22px;height:22px;padding:0 6px;align-items:center;justify-content:center;border-radius:99px;background:#eef2f8;color:var(--navy);font-size:10px;font-weight:800}
+
+@media (max-width:390px){.stats4{grid-template-columns:repeat(2,1fr)}.segment{grid-template-columns:repeat(5,1fr)}}
 </style>
 </head>
 <body>
@@ -91,6 +114,7 @@ button{cursor:pointer}
     <div class="brand">
       <img src="apple-touch-icon.png" alt="学术猫">
       <div><h1>学术猫·论文工作台</h1><p>硕士论文写作与管理助手</p></div>
+      <button class="top-search" onclick="globalSearch()" aria-label="全局搜索">⌕</button>
     </div>
   </header>
 
@@ -117,488 +141,265 @@ button{cursor:pointer}
 <div class="sheet-wrap" id="sheetWrap"><div class="sheet"><div class="handle"></div><div id="sheetContent"></div></div></div>
 
 <script>
-const STORAGE_KEY='academicCatThesisWorkbenchV2';
+const STORAGE_KEY='academicCatThesisWorkbenchV3';
+const LEGACY_KEYS=['academicCatThesisWorkbenchV2','academicCatThesisWorkbenchV1'];
+const SNAPSHOT_KEY='academicCatThesisSnapshotsV3';
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-const iso=()=>new Date().toISOString().slice(0,10);
 const fmt=n=>Number(n||0).toLocaleString('zh-CN');
 const esc=s=>String(s??'').replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
-const daysBetween=(a,b)=>Math.ceil((new Date(b+'T00:00:00')-new Date(a+'T00:00:00'))/86400000);
+function localISO(d=new Date()){const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');return `${y}-${m}-${day}`}
+const iso=()=>localISO(new Date());
+function dateObj(s){return new Date((s||iso())+'T12:00:00')}
+function daysBetween(a,b){return Math.ceil((dateObj(b)-dateObj(a))/86400000)}
+function addDays(date,n){const d=dateObj(date);d.setDate(d.getDate()+n);return localISO(d)}
+function monthKey(date){const d=dateObj(date);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`}
 
+const defaultFinalChecks=[
+ ['前置','封面、题名页及学位信息已核对'],['前置','中文摘要、关键词完整'],['前置','英文摘要、关键词完整'],['前置','目录与正文标题一致'],
+ ['正文','章节编号与层级统一'],['正文','图号、图题及正文引用全部核对'],['正文','表号、表题及正文引用全部核对'],['正文','公式编号、符号和单位统一'],
+ ['参考文献','正文引用与参考文献一一对应'],['参考文献','中英文参考文献格式统一'],['参考文献','作者、年份、期刊卷期页码已核对'],
+ ['格式','字体字号、行距、页边距符合要求'],['格式','页眉页脚、页码及分节正确'],['格式','图表清晰度与分辨率已检查'],
+ ['定稿','致谢、攻读学位期间成果等附属内容完整'],['定稿','完成全文错别字和标点检查'],['定稿','完成最终 PDF 逐页检查'],['定稿','最终版已异地备份']
+];
 const defaults={
-  settings:{thesisTitle:'我的硕士学位论文',totalWordGoal:80000,dailyWordGoal:2000,submissionDate:'2026-11-15',defenseDate:'2026-12-20',focusMinutes:25,breakMinutes:5},
-  chapters:[
-    {id:uid(),title:'第1章 绪论',targetWords:9000,currentWords:0,status:'进行中',notes:''},
-    {id:uid(),title:'第2章 研究区概况',targetWords:10000,currentWords:0,status:'未开始',notes:''},
-    {id:uid(),title:'第3章 研究方法',targetWords:12000,currentWords:0,status:'未开始',notes:''},
-    {id:uid(),title:'第4章 结果分析',targetWords:15000,currentWords:0,status:'未开始',notes:''},
-    {id:uid(),title:'第5章 讨论',targetWords:9000,currentWords:0,status:'未开始',notes:''},
-    {id:uid(),title:'第6章 结论与展望',targetWords:5000,currentWords:0,status:'未开始',notes:''}
-  ],
-  writingLogs:[],
-  problems:[],
-  feedback:[],
-  literature:[],
-  figures:[],
-  milestones:[],
-  todos:[],
-  versions:[],
-  defense:[],
-  focusLogs:[]
+ settings:{thesisTitle:'我的硕士学位论文',totalWordGoal:80000,dailyWordGoal:2000,submissionDate:'2026-11-15',defenseDate:'2026-12-20',focusMinutes:25,breakMinutes:5,startDate:iso()},
+ chapters:[
+  {id:uid(),title:'第1章 绪论',targetWords:9000,currentWords:0,status:'进行中',notes:'',sections:[]},
+  {id:uid(),title:'第2章 研究区概况',targetWords:10000,currentWords:0,status:'未开始',notes:'',sections:[]},
+  {id:uid(),title:'第3章 研究方法',targetWords:12000,currentWords:0,status:'未开始',notes:'',sections:[]},
+  {id:uid(),title:'第4章 结果分析',targetWords:15000,currentWords:0,status:'未开始',notes:'',sections:[]},
+  {id:uid(),title:'第5章 讨论',targetWords:9000,currentWords:0,status:'未开始',notes:'',sections:[]},
+  {id:uid(),title:'第6章 结论与展望',targetWords:5000,currentWords:0,status:'未开始',notes:'',sections:[]}
+ ],
+ writingLogs:[],problems:[],feedback:[],literature:[],figures:[],milestones:[],todos:[],versions:[],defense:[],focusLogs:[],meetings:[],
+ finalChecks:defaultFinalChecks.map(([category,title])=>({id:uid(),category,title,done:false,notes:''}))
 };
-let state=load();
-let currentView='home';
-let resourceTab='literature';
-let problemFilter='all';
-let focusSeconds=state.settings.focusMinutes*60;
-let focusTimer=null,focusRunning=false;
-
+function clone(x){return JSON.parse(JSON.stringify(x))}
+function normalize(v){
+ const n=Object.assign(clone(defaults),v||{});
+ n.settings=Object.assign({},defaults.settings,(v&&v.settings)||{});
+ ['chapters','writingLogs','problems','feedback','literature','figures','milestones','todos','versions','defense','focusLogs','meetings'].forEach(k=>{if(!Array.isArray(n[k]))n[k]=[]});
+ n.chapters=n.chapters.map(c=>Object.assign({id:uid(),title:'未命名章节',targetWords:0,currentWords:0,status:'未开始',notes:'',sections:[]},c,{sections:Array.isArray(c.sections)?c.sections:[]}));
+ if(!Array.isArray(n.finalChecks)||!n.finalChecks.length)n.finalChecks=clone(defaults.finalChecks);
+ return n;
+}
 function load(){
-  try{
-    const raw=localStorage.getItem(STORAGE_KEY);
-    if(!raw) return structuredClone(defaults);
-    const v=JSON.parse(raw);
-    return Object.assign(structuredClone(defaults),v,{
-      settings:Object.assign({},defaults.settings,v.settings||{}),
-      chapters:Array.isArray(v.chapters)?v.chapters:structuredClone(defaults.chapters)
-    });
-  }catch(e){return structuredClone(defaults)}
+ try{
+  let raw=localStorage.getItem(STORAGE_KEY);
+  if(!raw){for(const k of LEGACY_KEYS){raw=localStorage.getItem(k);if(raw)break}}
+  return raw?normalize(JSON.parse(raw)):clone(defaults);
+ }catch(e){return clone(defaults)}
 }
-function save(){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));renderAll()}
+let state=load();
+let currentView='home',resourceTab='literature',problemFilter='all',statsRange='week';
+let calendarCursor=dateObj(iso());calendarCursor.setDate(1);
+let focusSeconds=state.settings.focusMinutes*60,focusTimer=null,focusRunning=false;
+
+function save(options={}){localStorage.setItem(STORAGE_KEY,JSON.stringify(state));maybeSnapshot();if(options.render!==false)renderAll()}
+function maybeSnapshot(force=false){
+ try{
+  let arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]');const now=Date.now(),last=arr[0]?.ts||0;
+  if(force||now-last>12*3600000){arr.unshift({id:uid(),ts:now,label:force?'手动快照':'自动快照',state:clone(state)});arr=arr.slice(0,6);localStorage.setItem(SNAPSHOT_KEY,JSON.stringify(arr))}
+ }catch(e){}
+}
 function totalWords(){return state.chapters.reduce((s,c)=>s+Number(c.currentWords||0),0)}
-function todayWords(){return state.writingLogs.filter(x=>x.date===iso()).reduce((s,x)=>s+Number(x.words||0),0)}
+function wordsOn(date){return state.writingLogs.filter(x=>x.date===date).reduce((s,x)=>s+Number(x.words||0),0)}
+function minutesOn(date){return state.writingLogs.filter(x=>x.date===date).reduce((s,x)=>s+Number(x.minutes||0),0)}
+function todayWords(){return wordsOn(iso())}
+function pct(a,b){return b?Math.max(0,Math.min(100,Math.round(Number(a||0)/Number(b)*100))):0}
+function chapterTitle(id){return state.chapters.find(x=>x.id===id)?.title||'未指定章节'}
+function sectionTitle(cid,sid){return state.chapters.find(x=>x.id===cid)?.sections?.find(x=>x.id===sid)?.title||''}
 function streak(){
-  const dates=[...new Set(state.writingLogs.filter(x=>Number(x.words)>0).map(x=>x.date))].sort().reverse();
-  if(!dates.length)return 0;
-  let d=new Date();let n=0;
-  for(;;){
-    const k=d.toISOString().slice(0,10);
-    if(dates.includes(k)){n++;d.setDate(d.getDate()-1)}
-    else if(n===0){d.setDate(d.getDate()-1); if(dates.includes(d.toISOString().slice(0,10))){n++;d.setDate(d.getDate()-1)} else break}
-    else break;
-  } return n;
+ const dates=new Set(state.writingLogs.filter(x=>Number(x.words)>0).map(x=>x.date));if(!dates.size)return 0;
+ let d=dateObj(iso()),n=0;if(!dates.has(localISO(d))){d.setDate(d.getDate()-1);if(!dates.has(localISO(d)))return 0}
+ while(dates.has(localISO(d))){n++;d.setDate(d.getDate()-1)}return n;
 }
-function pct(a,b){return b?Math.min(100,Math.round(a/b*100)):0}
-function statusChip(s){
-  const cls=s==='已解决'||s==='已完成'||s==='已引用'||s==='已精读'?'good':s==='未解决'||s==='高'?'bad':'warn';
-  return `<span class="chip ${cls}">${esc(s)}</span>`
-}
-function go(view){
-  currentView=view;
-  $$('.view').forEach(v=>v.classList.remove('active'));
-  $('#view-'+view).classList.add('active');
-  $$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===view));
-  $('#bottomnav').style.display=view==='focus'?'none':'grid';
-  $('#fab').style.display=(view==='stats'||view==='focus')?'none':'block';
-  window.scrollTo({top:0,behavior:'instant'});
-  renderAll();
-}
+function statusChip(s){const cls=['已解决','已完成','已引用','已精读'].includes(s)?'good':(['未解决','高','逾期'].includes(s)?'bad':'warn');return `<span class="chip ${cls}">${esc(s)}</span>`}
+function dueBadge(d,done=false){if(!d||done)return '';const diff=daysBetween(iso(),d);const cls=diff<0?'overdue':diff===0?'today':'';const txt=diff<0?`逾期 ${Math.abs(diff)} 天`:diff===0?'今天截止':`剩 ${diff} 天`;return `<span class="due-badge ${cls}">${txt}</span>`}
+function recentDailyAvg(days=14){let sum=0;for(let i=0;i<days;i++)sum+=wordsOn(addDays(iso(),-i));return Math.round(sum/days)}
+function predictedDate(){const remain=Math.max(0,Number(state.settings.totalWordGoal||0)-totalWords()),avg=recentDailyAvg(14);if(remain<=0)return {date:iso(),avg,days:0};if(avg<=0)return {date:'—',avg,days:null};const days=Math.ceil(remain/avg);return {date:addDays(iso(),days),avg,days}}
+function unresolvedHigh(){return state.problems.filter(x=>x.status!=='已解决'&&x.priority==='高').length+state.feedback.filter(x=>x.status!=='已完成'&&x.priority==='高').length}
+function overdueTodos(){return state.todos.filter(x=>!x.done&&x.due&&daysBetween(iso(),x.due)<0).length}
+function healthSummary(){const pred=predictedDate(),sub=state.settings.submissionDate,late=pred.date!=='—'&&sub&&daysBetween(sub,pred.date)>0;return {pred,late,high:unresolvedHigh(),overdue:overdueTodos()}}
+function formatDateCN(s){if(!s)return '—';const d=dateObj(s);return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`}
+
+function go(view){currentView=view;$$('.view').forEach(v=>v.classList.remove('active'));$('#view-'+view).classList.add('active');$$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#bottomnav').style.display=view==='focus'?'none':'grid';$('#fab').style.display=(view==='stats'||view==='focus')?'none':'block';window.scrollTo({top:0,behavior:'instant'});renderAll()}
 function openSheet(html){$('#sheetContent').innerHTML=html;$('#sheetWrap').classList.add('open')}
 function closeSheet(){$('#sheetWrap').classList.remove('open')}
 $('#sheetWrap').addEventListener('click',e=>{if(e.target.id==='sheetWrap')closeSheet()});
 
 function renderHome(){
-  const total=totalWords(), goal=Number(state.settings.totalWordGoal||80000), p=pct(total,goal);
-  const dleft=Math.max(0,daysBetween(iso(),state.settings.defenseDate));
-  const unresolved=state.problems.filter(x=>x.status!=='已解决').length;
-  const pending=state.feedback.filter(x=>x.status!=='已完成').length;
-  const todoPending=state.todos.filter(x=>!x.done).length;
-  $('#view-home').innerHTML=`
-  <div class="hero">
-    <div class="hero-top"><div><div class="eyebrow">论文总进度</div><div class="big">${fmt(total)} <small>/ ${fmt(goal)} 字</small></div></div><div style="font-weight:800">${p}%</div></div>
-    <div class="progress"><span style="width:${p}%"></span></div>
-    <div class="hero-note">${esc(state.settings.thesisTitle)}</div>
-  </div>
-  <div class="stats4">
-    <div class="stat"><div class="label">今日目标</div><div class="num">${fmt(state.settings.dailyWordGoal)}<span class="unit">字</span></div></div>
-    <div class="stat"><div class="label">今日已写</div><div class="num">${fmt(todayWords())}<span class="unit">字</span></div></div>
-    <div class="stat"><div class="label">连续写作</div><div class="num">${streak()}<span class="unit">天</span></div></div>
-    <div class="stat"><div class="label">答辩倒计时</div><div class="num">${dleft}<span class="unit">天</span></div></div>
-  </div>
-  <div class="section-title"><h2>快速开始</h2><span class="sub">把卡点和修改都留痕</span></div>
-  <div class="quick">
-    <button onclick="go('focus')"><div class="iconbox">✎</div><strong>开始写作</strong><span>专注计时 + 登记字数</span></button>
-    <button onclick="problemForm()"><div class="iconbox">?</div><strong>记录问题</strong><span>${unresolved} 个问题待闭环</span></button>
-    <button onclick="literatureForm()"><div class="iconbox">▭</div><strong>文献整理</strong><span>${state.literature.length} 篇已录入</span></button>
-    <button onclick="feedbackForm()"><div class="iconbox">✓</div><strong>导师意见</strong><span>${pending} 项待修改</span></button>
-    <button onclick="todoForm()"><div class="iconbox">☐</div><strong>今日待办</strong><span>${todoPending} 项待完成</span></button>
-    <button onclick="resourceTab='defense';go('resources')"><div class="iconbox">◇</div><strong>答辩准备</strong><span>${state.defense.length} 项已记录</span></button>
-  </div>
-  <div class="section-title"><h2>最近动态</h2><span class="sub">写作 / 问题 / 修改</span></div>
-  ${recentActivity()}
-  <div class="section-title"><h2>设置与备份</h2><span class="sub">数据只保存在本机</span></div>
-  <div class="settings-grid">
-    <button class="pill-btn" onclick="settingsForm()">论文设置</button>
-    <button class="pill-btn" onclick="exportBackup()">导出备份</button>
-    <button class="pill-btn" onclick="importBackup()">导入备份</button>
-    <button class="pill-btn" onclick="milestoneForm()">新增节点</button>
-    <button class="pill-btn" onclick="versionForm()">记录版本</button>
-    <button class="pill-btn" onclick="defenseForm()">答辩准备</button>
-  </div>`;
+ const total=totalWords(),goal=Number(state.settings.totalWordGoal||80000),p=pct(total,goal),dleft=Math.max(0,daysBetween(iso(),state.settings.defenseDate));
+ const unresolved=state.problems.filter(x=>x.status!=='已解决').length,pending=state.feedback.filter(x=>x.status!=='已完成').length,todoPending=state.todos.filter(x=>!x.done).length,h=healthSummary();
+ const submitLeft=state.settings.submissionDate?daysBetween(iso(),state.settings.submissionDate):null;
+ $('#view-home').innerHTML=`
+ <div class="hero"><div class="hero-top"><div><div class="eyebrow">论文总进度</div><div class="big">${fmt(total)} <small>/ ${fmt(goal)} 字</small></div></div><div style="font-weight:800">${p}%</div></div><div class="progress"><span style="width:${p}%"></span></div><div class="hero-note">${esc(state.settings.thesisTitle)}</div></div>
+ <div class="stats4"><div class="stat"><div class="label">今日目标</div><div class="num">${fmt(state.settings.dailyWordGoal)}<span class="unit">字</span></div></div><div class="stat"><div class="label">今日已写</div><div class="num">${fmt(todayWords())}<span class="unit">字</span></div></div><div class="stat"><div class="label">连续写作</div><div class="num">${streak()}<span class="unit">天</span></div></div><div class="stat"><div class="label">答辩倒计时</div><div class="num">${dleft}<span class="unit">天</span></div></div></div>
+ <div class="section-title"><h2>论文健康度</h2><span class="sub">进度风险自动提示</span></div>
+ <div class="health">
+  <div class="hcard"><div class="hlabel">近14日日均</div><div class="hnum">${fmt(h.pred.avg)} 字/天</div></div>
+  <div class="hcard"><div class="hlabel">预计达到目标</div><div class="hnum ${h.late?'badtxt':'goodtxt'}">${h.pred.date==='—'?'暂无足够数据':formatDateCN(h.pred.date)}</div></div>
+  <div class="hcard"><div class="hlabel">高优先级未闭环</div><div class="hnum ${h.high?'badtxt':'goodtxt'}">${h.high} 项</div></div>
+  <div class="hcard"><div class="hlabel">逾期待办</div><div class="hnum ${h.overdue?'badtxt':'goodtxt'}">${h.overdue} 项</div></div>
+ </div>
+ ${h.late?`<div class="notice" style="margin-top:8px;color:var(--bad)">按近14天的平均写作速度，预计完成时间晚于当前提交日期。建议调整每日目标或优先推进字数缺口最大的章节。</div>`:''}
+ <div class="section-title"><h2>快速开始</h2><span class="sub">论文核心动作</span></div>
+ <div class="quick">
+  <button onclick="go('focus')"><div class="iconbox">✎</div><strong>开始写作</strong><span>专注计时 + 登记字数</span></button>
+  <button onclick="problemForm()"><div class="iconbox">?</div><strong>记录问题</strong><span>${unresolved} 个问题待闭环</span></button>
+  <button onclick="todoForm()"><div class="iconbox">☐</div><strong>论文待办</strong><span>${todoPending} 项待完成</span></button>
+  <button onclick="literatureForm()"><div class="iconbox">▭</div><strong>文献卡片</strong><span>${state.literature.length} 篇已录入</span></button>
+  <button onclick="meetingForm()"><div class="iconbox">☷</div><strong>导师会议</strong><span>${state.meetings.length} 次已记录</span></button>
+  <button onclick="resourceTab='finalcheck';go('resources')"><div class="iconbox">✓</div><strong>定稿检查</strong><span>${state.finalChecks.filter(x=>x.done).length}/${state.finalChecks.length} 已完成</span></button>
+ </div>
+ ${urgentBlock()}
+ <div class="section-title"><h2>最近动态</h2><span class="sub">所有模块自动汇总</span></div>${recentActivity()}
+ <div class="section-title"><h2>工具与数据</h2><span class="sub">搜索、设置、备份</span></div>
+ <div class="settings-grid"><button class="pill-btn" onclick="globalSearch()">全局搜索</button><button class="pill-btn" onclick="settingsForm()">论文设置</button><button class="pill-btn" onclick="exportBackup()">导出 JSON</button><button class="pill-btn" onclick="exportCSV()">导出 CSV</button><button class="pill-btn" onclick="snapshotManager()">历史快照</button><button class="pill-btn" onclick="manualSnapshot()">立即快照</button></div>`;
+}
+function urgentBlock(){
+ let items=[];
+ state.todos.filter(x=>!x.done&&x.due).forEach(x=>items.push({score:daysBetween(iso(),x.due)<0?100:40,date:x.due,title:x.title,meta:`待办 · ${x.priority||'中'}优先级`,open:`todoForm('${x.id}')`,danger:daysBetween(iso(),x.due)<0}));
+ state.problems.filter(x=>x.status!=='已解决'&&x.priority==='高').forEach(x=>items.push({score:80,date:x.createdAt,title:x.title,meta:'高优先级问题未解决',open:`problemDetail('${x.id}')`,danger:true}));
+ state.feedback.filter(x=>x.status!=='已完成'&&x.priority==='高').forEach(x=>items.push({score:75,date:x.createdAt,title:x.title,meta:'高优先级修改未完成',open:`feedbackForm('${x.id}')`,danger:true}));
+ items.sort((a,b)=>b.score-a.score||String(a.date).localeCompare(String(b.date)));if(!items.length)return '';
+ return `<div class="section-title"><h2>需要优先处理</h2><span class="sub">${items.length} 项</span></div>${items.slice(0,5).map(x=>`<div class="card alert-card ${x.danger?'danger':''}" onclick="${x.open}"><div class="row"><div><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.meta)}</div></div>${x.date?dueBadge(x.date,false):''}</div></div>`).join('')}`;
 }
 function recentActivity(){
-  let items=[];
-  state.writingLogs.forEach(x=>items.push({date:x.date,title:`写作 +${x.words} 字`,meta:x.note||chapterTitle(x.chapterId)}));
-  state.problems.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`问题：${x.title}`,meta:`${x.status} · ${x.type||'未分类'}`}));
-  state.feedback.forEach(x=>items.push({date:x.completedAt||x.createdAt,title:`修改：${x.title}`,meta:`${x.status} · ${x.source||'未注明来源'}`}));
-  state.todos.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`待办：${x.title}`,meta:x.done?'已完成':'待完成'}));
-  state.versions.forEach(x=>items.push({date:x.date,title:`版本：${x.name}`,meta:x.stage||'版本记录'}));
-  state.defense.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`答辩：${x.title}`,meta:x.status||'待准备'}));
-  items.sort((a,b)=>String(b.date).localeCompare(String(a.date)));
-  if(!items.length)return `<div class="empty">还没有记录。今天写第一笔，就从这里开始。</div>`;
-  return items.slice(0,5).map(x=>`<div class="card"><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.date)} · ${esc(x.meta)}</div></div>`).join('');
+ let items=[];
+ state.writingLogs.forEach(x=>items.push({date:x.date,title:`写作 +${x.words} 字`,meta:x.note||chapterTitle(x.chapterId)}));
+ state.problems.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`问题：${x.title}`,meta:`${x.status} · ${x.type||'未分类'}`}));
+ state.feedback.forEach(x=>items.push({date:x.completedAt||x.createdAt,title:`修改：${x.title}`,meta:`${x.status} · ${x.source||'未注明来源'}`}));
+ state.todos.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`待办：${x.title}`,meta:x.done?'已完成':'待完成'}));
+ state.versions.forEach(x=>items.push({date:x.date,title:`版本：${x.name}`,meta:`${x.stage||'版本记录'} · ${fmt(x.wordCount||0)}字`}));
+ state.defense.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`答辩：${x.title}`,meta:x.status||'待准备'}));
+ state.meetings.forEach(x=>items.push({date:x.date,title:`导师会议：${x.topic}`,meta:x.actions?'已记录下一步行动':'会议记录'}));
+ items.sort((a,b)=>String(b.date).localeCompare(String(a.date)));if(!items.length)return `<div class="empty">还没有记录。今天写第一笔，就从这里开始。</div>`;
+ return items.slice(0,7).map(x=>`<div class="card"><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.date||'')} · ${esc(x.meta)}</div></div>`).join('');
 }
-function chapterTitle(id){return state.chapters.find(x=>x.id===id)?.title||'未指定章节'}
 
 function renderChapters(){
-  $('#view-chapters').innerHTML=`
-  <div class="section-title" style="margin-top:2px"><h2>章节进度</h2><span class="sub">${state.chapters.length} 个章节</span></div>
-  ${state.chapters.map(c=>{
-    const p=pct(c.currentWords,c.targetWords);
-    return `<div class="card" onclick="chapterForm('${c.id}')">
-      <div class="row"><div><div class="title">${esc(c.title)}</div><div class="meta">${fmt(c.currentWords)} / ${fmt(c.targetWords)} 字 · ${esc(c.status||'')}</div></div><b style="color:var(--navy)">${p}%</b></div>
-      <div class="small-progress"><span style="width:${p}%"></span></div>
-      ${c.notes?`<div class="meta">${esc(c.notes)}</div>`:''}
-    </div>`}).join('')||'<div class="empty">暂无章节</div>'}`;
+ $('#view-chapters').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>章节与小节</h2><span class="sub">${state.chapters.length} 章 · ${state.chapters.reduce((s,c)=>s+(c.sections?.length||0),0)} 小节</span></div>
+ ${state.chapters.map(c=>{const p=pct(c.currentWords,c.targetWords),sec=c.sections||[];return `<div class="card" onclick="chapterDetail('${c.id}')"><div class="row"><div><div class="title">${esc(c.title)}</div><div class="meta">${fmt(c.currentWords)} / ${fmt(c.targetWords)} 字 · ${esc(c.status||'')} · ${sec.length} 个小节</div></div><div class="progress-ring" style="--ring:${p}%"><b>${p}%</b></div></div><div class="small-progress"><span style="width:${p}%"></span></div>${sec.length?`<div class="meta">小节完成 ${sec.filter(s=>s.status==='已完成').length}/${sec.length}</div>`:''}${c.notes?`<div class="meta">${esc(c.notes)}</div>`:''}</div>`}).join('')||'<div class="empty">暂无章节</div>'}`;
 }
+function chapterDetail(id){const c=state.chapters.find(x=>x.id===id);if(!c)return;const p=pct(c.currentWords,c.targetWords);openSheet(`<h3>${esc(c.title)}</h3><div class="row"><div class="meta">${fmt(c.currentWords)} / ${fmt(c.targetWords)} 字 · ${esc(c.status)}</div><b style="color:var(--navy)">${p}%</b></div><div class="small-progress"><span style="width:${p}%"></span></div>${c.notes?`<div class="detail-block"><b>章节备注 / 待补内容</b><p>${esc(c.notes)}</p></div>`:''}<div class="section-title"><h2>小节清单</h2><button class="pill-btn" style="padding:7px 10px" onclick="sectionForm('${id}')">+ 小节</button></div>${(c.sections||[]).map(s=>`<div class="section-mini" onclick="event.stopPropagation();sectionForm('${id}','${s.id}')"><div class="row"><div><div class="title">${esc(s.title)}</div><div class="meta">${fmt(s.currentWords||0)} / ${fmt(s.targetWords||0)} 字 · ${esc(s.status||'')}</div></div><b>${pct(s.currentWords,s.targetWords)}%</b></div><div class="small-progress"><span style="width:${pct(s.currentWords,s.targetWords)}%"></span></div></div>`).join('')||'<div class="empty" style="padding:14px">还没有小节。可细化到 1.1、1.2、1.3 级别管理。</div>'}<div class="actions"><button class="btn soft" onclick="chapterForm('${id}')">编辑章节</button><button class="btn primary" onclick="closeSheet();writingLogForm(null,'${id}')">给本章记字数</button></div>`)}
+function chapterForm(id){const x=state.chapters.find(v=>v.id===id)||{id:'',title:'',targetWords:0,currentWords:0,status:'未开始',notes:'',sections:[]};openSheet(`<h3>${id?'编辑章节':'新增章节'}</h3><div class="field"><label>章节名称</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>目标字数</label><input id="f-target" type="number" value="${x.targetWords||0}"></div><div class="field"><label>当前字数</label><input id="f-current" type="number" value="${x.currentWords||0}"></div></div><div class="field"><label>状态</label><select id="f-status">${['未开始','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>备注 / 待补内容</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('chapters','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveChapter('${id}')">保存</button></div>`)}
+function saveChapter(id){const old=state.chapters.find(x=>x.id===id);const v={id:id||uid(),title:$('#f-title').value.trim(),targetWords:+$('#f-target').value||0,currentWords:+$('#f-current').value||0,status:$('#f-status').value,notes:$('#f-notes').value.trim(),sections:old?.sections||[]};if(!v.title)return alert('请填写章节名称');const i=state.chapters.findIndex(x=>x.id===id);if(i>=0)state.chapters[i]=v;else state.chapters.push(v);closeSheet();save()}
+function sectionForm(cid,sid){const c=state.chapters.find(x=>x.id===cid);if(!c)return;const x=c.sections.find(v=>v.id===sid)||{title:'',targetWords:0,currentWords:0,status:'未开始',notes:''};openSheet(`<h3>${sid?'编辑小节':'新增小节'} · ${esc(c.title)}</h3><div class="field"><label>小节名称</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：4.2 危险性评价结果"></div><div class="form2"><div class="field"><label>目标字数</label><input id="f-target" type="number" value="${x.targetWords||0}"></div><div class="field"><label>当前字数</label><input id="f-current" type="number" value="${x.currentWords||0}"></div></div><div class="field"><label>状态</label><select id="f-status">${['未开始','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="actions">${sid?`<button class="btn danger" onclick="removeSection('${cid}','${sid}')">删除</button>`:''}<button class="btn primary" onclick="saveSection('${cid}','${sid||''}')">保存</button></div>`)}
+function saveSection(cid,sid){const c=state.chapters.find(x=>x.id===cid);if(!c)return;const v={id:sid||uid(),title:$('#f-title').value.trim(),targetWords:+$('#f-target').value||0,currentWords:+$('#f-current').value||0,status:$('#f-status').value,notes:$('#f-notes').value.trim()};if(!v.title)return alert('请填写小节名称');const i=c.sections.findIndex(x=>x.id===sid);if(i>=0)c.sections[i]=v;else c.sections.push(v);closeSheet();save()}
+function removeSection(cid,sid){if(!confirm('确定删除这个小节吗？'))return;const c=state.chapters.find(x=>x.id===cid);if(c)c.sections=c.sections.filter(x=>x.id!==sid);closeSheet();save()}
+
 function renderProblems(){
-  const list=state.problems.filter(x=>problemFilter==='all'||(problemFilter==='open'?x.status!=='已解决':x.status==='已解决'));
-  const solved=state.problems.filter(x=>x.status==='已解决').length;
-  $('#view-problems').innerHTML=`
-  <div class="section-title" style="margin-top:2px"><h2>问题记录 / 答疑</h2><span class="sub">问题 → 处理 → 结论</span></div>
-  <div class="tabs">
-    <button class="${problemFilter==='all'?'active':''}" onclick="problemFilter='all';renderProblems()">全部 ${state.problems.length}</button>
-    <button class="${problemFilter==='open'?'active':''}" onclick="problemFilter='open';renderProblems()">未闭环 ${state.problems.length-solved}</button>
-    <button class="${problemFilter==='solved'?'active':''}" onclick="problemFilter='solved';renderProblems()">已解决 ${solved}</button>
-  </div>
-  ${list.map(x=>`<div class="card" onclick="problemDetail('${x.id}')">
-    <div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status)}</div>
-    <div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.type||'未分类')} · ${esc(x.createdAt||'')}</div>
-    ${x.description?`<div class="meta">${esc(x.description).slice(0,90)}${x.description.length>90?'…':''}</div>`:''}
-  </div>`).join('')||'<div class="empty">暂时没有问题记录。遇到卡点就记下来，解决后再补结果。</div>'}
-  <div class="kpi-strip"><div class="kpi"><b>${state.problems.length}</b><span>问题总数</span></div><div class="kpi"><b>${solved}</b><span>已解决</span></div><div class="kpi"><b>${state.problems.length-solved}</b><span>待处理</span></div></div>`;
+ const list=state.problems.filter(x=>problemFilter==='all'||(problemFilter==='open'?x.status!=='已解决':problemFilter==='solved'?x.status==='已解决':x.priority==='高')).sort((a,b)=>((a.status==='已解决')-(b.status==='已解决'))||((b.priority==='高')-(a.priority==='高'))||String(b.updatedAt||b.createdAt).localeCompare(String(a.updatedAt||a.createdAt)));
+ const solved=state.problems.filter(x=>x.status==='已解决').length,avgSolve=averageSolveDays();
+ $('#view-problems').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>问题记录 / 答疑</h2><span class="sub">问题 → 处理 → 结果 → 复盘</span></div><div class="tabs"><button class="${problemFilter==='all'?'active':''}" onclick="problemFilter='all';renderProblems()">全部 ${state.problems.length}</button><button class="${problemFilter==='open'?'active':''}" onclick="problemFilter='open';renderProblems()">未闭环 ${state.problems.length-solved}</button><button class="${problemFilter==='solved'?'active':''}" onclick="problemFilter='solved';renderProblems()">已解决 ${solved}</button><button class="${problemFilter==='high'?'active':''}" onclick="problemFilter='high';renderProblems()">高优先级</button></div>${list.map(x=>`<div class="card" onclick="problemDetail('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status)}</div><div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.type||'未分类')} · ${esc(x.priority||'中')}优先级 · ${esc(x.createdAt||'')}</div>${x.description?`<div class="meta">${esc(x.description).slice(0,95)}${x.description.length>95?'…':''}</div>`:''}</div>`).join('')||'<div class="empty">暂时没有问题记录。遇到卡点就记下来，解决后补上结果和复盘。</div>'}<div class="kpi-strip"><div class="kpi"><b>${state.problems.length}</b><span>问题总数</span></div><div class="kpi"><b>${solved}</b><span>已解决</span></div><div class="kpi"><b>${avgSolve===null?'—':avgSolve}</b><span>平均解决天数</span></div></div>`;
 }
+function averageSolveDays(){const v=state.problems.filter(x=>x.status==='已解决'&&x.createdAt&&x.resolvedAt).map(x=>Math.max(0,daysBetween(x.createdAt,x.resolvedAt)));return v.length?Math.round(v.reduce((a,b)=>a+b,0)/v.length*10)/10:null}
+function problemForm(id){const x=state.problems.find(v=>v.id===id)||{title:'',chapter:'',type:'结构逻辑',description:'',status:'未解决',method:'',resolution:'',lesson:'',priority:'中',source:'自己发现',evidence:'',createdAt:iso(),resolvedAt:''};openSheet(`<h3>${id?'编辑问题':'记录今天遇到的问题'}</h3><div class="field"><label>问题标题</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：第4章图表说明怎么写"></div><div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter||'')}" placeholder="第4章"></div><div class="field"><label>问题类型</label><select id="f-type">${['结构逻辑','文字表达','图表规范','数据分析','文献引用','格式排版','方法设计','导师意见','答辩准备','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div></div><div class="form2"><div class="field"><label>来源</label><select id="f-source">${['自己发现','导师提出','同学讨论','文献启发','规范要求','答辩/评审','其他'].map(s=>`<option ${x.source===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>问题描述</label><textarea id="f-desc">${esc(x.description||'')}</textarea></div><div class="field"><label>状态</label><select id="f-status">${['未解决','处理中','已解决','需继续跟进'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>解决方式 / 处理过程</label><textarea id="f-method">${esc(x.method||'')}</textarea></div><div class="field"><label>依据 / 相关资料</label><textarea id="f-evidence" placeholder="可记文献、规范、导师原话或数据依据">${esc(x.evidence||'')}</textarea></div><div class="field"><label>最终解决结果</label><textarea id="f-resolution">${esc(x.resolution||'')}</textarea></div><div class="field"><label>经验总结 / 下次怎么做</label><textarea id="f-lesson">${esc(x.lesson||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('problems','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveProblem('${id}')">保存</button></div>`)}
+function saveProblem(id){const old=state.problems.find(x=>x.id===id),status=$('#f-status').value;const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),type:$('#f-type').value,source:$('#f-source').value,description:$('#f-desc').value.trim(),status,priority:$('#f-priority').value,method:$('#f-method').value.trim(),evidence:$('#f-evidence').value.trim(),resolution:$('#f-resolution').value.trim(),lesson:$('#f-lesson').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso(),resolvedAt:status==='已解决'?(old?.resolvedAt||iso()):''};if(!v.title)return alert('请填写问题标题');const i=state.problems.findIndex(x=>x.id===id);if(i>=0)state.problems[i]=v;else state.problems.push(v);closeSheet();save()}
+function problemDetail(id){const x=state.problems.find(v=>v.id===id);if(!x)return;openSheet(`<h3>${esc(x.title)}</h3><div class="row"><div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.type||'未分类')} · ${esc(x.priority||'中')}优先级</div>${statusChip(x.status)}</div><div class="meta">来源：${esc(x.source||'未记录')} · 创建：${esc(x.createdAt||'')}${x.resolvedAt?' · 解决：'+esc(x.resolvedAt):''}</div>${x.description?`<div class="detail-block"><b>问题描述</b><p>${esc(x.description)}</p></div>`:''}${x.method?`<div class="detail-block"><b>处理过程</b><p>${esc(x.method)}</p></div>`:''}${x.evidence?`<div class="detail-block"><b>依据 / 相关资料</b><p>${esc(x.evidence)}</p></div>`:''}${x.resolution?`<div class="detail-block"><b>解决结果</b><p>${esc(x.resolution)}</p></div>`:''}${x.lesson?`<div class="detail-block"><b>复盘总结</b><p>${esc(x.lesson)}</p></div>`:''}<div class="actions"><button class="btn soft" onclick="closeSheet();problemForm('${id}')">编辑</button>${x.status!=='已解决'?`<button class="btn primary" onclick="markSolved('${id}')">标记已解决</button>`:`<button class="btn primary" onclick="reopenProblem('${id}')">重新打开</button>`}</div>`)}
+function markSolved(id){const x=state.problems.find(v=>v.id===id);if(x){x.status='已解决';x.resolvedAt=iso();x.updatedAt=iso()}closeSheet();save()}
+function reopenProblem(id){const x=state.problems.find(v=>v.id===id);if(x){x.status='需继续跟进';x.resolvedAt='';x.updatedAt=iso()}closeSheet();save()}
+
 function renderResources(){
-  const tabs=[
-    ['literature','文献'],['feedback','修改'],['todos','待办'],['figures','图表'],
-    ['milestones','节点'],['versions','版本'],['defense','答辩']
-  ];
-  let body='';
-  if(resourceTab==='literature'){
-    body=state.literature.map(x=>`<div class="card" onclick="literatureForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待阅读')}</div><div class="meta">${esc(x.authors||'')} ${esc(x.year||'')} · 用于：${esc(x.usedIn||'未指定')}</div>${x.notes?`<div class="meta">${esc(x.notes).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有文献。可以把“读过什么、能放哪一章、核心观点”记在这里。</div>';
-  }else if(resourceTab==='feedback'){
-    body=state.feedback.map(x=>`<div class="card" onclick="feedbackForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status)}</div><div class="meta">来源：${esc(x.source||'')} · ${esc(x.chapter||'未指定章节')} · 优先级：${esc(x.priority||'中')}</div>${x.detail?`<div class="meta">${esc(x.detail).slice(0,95)}</div>`:''}</div>`).join('')||'<div class="empty">还没有修改意见。导师意见、自查问题、格式规范都可以放这里。</div>';
-  }else if(resourceTab==='todos'){
-    const sorted=state.todos.slice().sort((a,b)=>(a.done===b.done?String(a.due||'9999').localeCompare(String(b.due||'9999')):a.done-b.done));
-    body=sorted.map(x=>`<div class="card" onclick="todoForm('${x.id}')"><div class="row"><div class="title">${x.done?'✓ ':''}${esc(x.title)}</div>${statusChip(x.done?'已完成':'待完成')}</div><div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.priority||'中')}优先级${x.due?' · 截止 '+esc(x.due):''}</div>${x.notes?`<div class="meta">${esc(x.notes).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有待办。把“今天要写什么、要补什么、要改什么”记在这里。</div>';
-  }else if(resourceTab==='figures'){
-    body=state.figures.map(x=>`<div class="card" onclick="figureForm('${x.id}')"><div class="row"><div class="title">${esc(x.no||'未编号')} ${esc(x.title)}</div>${statusChip(x.status||'待制作')}</div><div class="meta">${esc(x.kind||'图')} · ${esc(x.chapter||'未指定章节')}</div>${x.notes?`<div class="meta">${esc(x.notes)}</div>`:''}</div>`).join('')||'<div class="empty">还没有图表清单。把“图号、名称、是否完成、是否正文引用”都记下来。</div>';
-  }else if(resourceTab==='milestones'){
-    body=state.milestones.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(x=>`<div class="card" onclick="milestoneForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待完成')}</div><div class="meta">${esc(x.date||'未定日期')} ${x.date?`· 距今 ${daysBetween(iso(),x.date)} 天`:''}</div></div>`).join('')||'<div class="empty">还没有时间节点。可以添加初稿、预答辩、送审、答辩、定稿等。</div>';
-  }else if(resourceTab==='versions'){
-    body=state.versions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<div class="card" onclick="versionForm('${x.id}')"><div class="row"><div class="title">${esc(x.name)}</div><span class="chip blue">${esc(x.date||'')}</span></div><div class="meta">${esc(x.stage||'未分类')} · ${esc(x.note||'无说明')}</div></div>`).join('')||'<div class="empty">还没有版本记录。每次形成重要稿件时记一笔，避免“哪个才是最新版”。</div>';
-  }else{
-    body=state.defense.map(x=>`<div class="card" onclick="defenseForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待准备')}</div><div class="meta">${esc(x.type||'答辩事项')}${x.answer?' · 已记录答案/要点':''}</div>${x.answer?`<div class="meta">${esc(x.answer).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有答辩准备记录。可记录PPT、陈述稿、老师可能提问、回答要点和材料清单。</div>';
-  }
-  $('#view-resources').innerHTML=`
-    <div class="section-title" style="margin-top:2px"><h2>资料与流程</h2><span class="sub">论文全流程清单</span></div>
-    <div class="tabs">${tabs.map(t=>`<button class="${resourceTab===t[0]?'active':''}" onclick="resourceTab='${t[0]}';renderResources()">${t[1]}</button>`).join('')}</div>
-    ${body}`;
+ const tabs=[['literature','文献'],['feedback','修改'],['todos','待办'],['meetings','会议'],['figures','图表'],['milestones','节点'],['versions','版本'],['finalcheck','定稿'],['defense','答辩']];let body='';
+ if(resourceTab==='literature'){
+  const eng=state.literature.filter(x=>x.language==='英文').length,cited=state.literature.filter(x=>x.status==='已引用').length;
+  body=`<div class="mini-grid" style="margin-bottom:10px"><div class="mini-cell"><b>${state.literature.length}</b><span>全部文献</span></div><div class="mini-cell"><b>${eng}</b><span>英文文献</span></div><div class="mini-cell"><b>${cited}</b><span>已引用</span></div></div>`+state.literature.slice().sort((a,b)=>(b.favorite?1:0)-(a.favorite?1:0)||String(b.year).localeCompare(String(a.year))).map(x=>`<div class="card" onclick="literatureForm('${x.id}')"><div class="row"><div class="title">${x.favorite?'<span class="star">★</span> ':''}${esc(x.title)}</div>${statusChip(x.status||'待阅读')}</div><div class="meta">${esc(x.authors||'')} ${esc(x.year||'')} · ${esc(x.language||'未注明')} · 用于：${esc(x.usedIn||'未指定')}</div>${tagsHTML(x.tags)}${x.notes?`<div class="meta">${esc(x.notes).slice(0,100)}</div>`:''}</div>`).join('')||'<div class="empty">还没有文献。把“读过什么、能放哪一章、核心观点”整理成文献卡片。</div>';
+ }else if(resourceTab==='feedback'){
+  body=state.feedback.slice().sort((a,b)=>(a.status==='已完成')-(b.status==='已完成')||((b.priority==='高')-(a.priority==='高'))).map(x=>`<div class="card" onclick="feedbackForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status)}</div><div class="meta">${esc(x.round||'未分轮次')} · 来源：${esc(x.source||'')} · ${esc(x.chapter||'未指定章节')} · ${esc(x.priority||'中')}优先级</div>${x.detail?`<div class="meta">${esc(x.detail).slice(0,95)}</div>`:''}</div>`).join('')||'<div class="empty">还没有修改意见。导师、自查、盲审、格式规范都可以放这里。</div>';
+ }else if(resourceTab==='todos'){
+  const sorted=state.todos.slice().sort((a,b)=>(a.done===b.done?String(a.due||'9999').localeCompare(String(b.due||'9999')):a.done-b.done));
+  body=sorted.map(x=>`<div class="card" onclick="todoForm('${x.id}')"><div class="row"><div class="title">${x.done?'✓ ':''}${esc(x.title)}</div>${dueBadge(x.due,x.done)||statusChip(x.done?'已完成':'待完成')}</div><div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.priority||'中')}优先级${x.due?' · 截止 '+esc(x.due):''}</div>${x.notes?`<div class="meta">${esc(x.notes).slice(0,90)}</div>`:''}</div>`).join('')||'<div class="empty">还没有待办。把“今天要写什么、要补什么、要改什么”记在这里。</div>';
+ }else if(resourceTab==='meetings'){
+  body=state.meetings.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<div class="card" onclick="meetingForm('${x.id}')"><div class="row"><div class="title">${esc(x.topic)}</div><span class="chip blue">${esc(x.date||'')}</span></div><div class="meta">${esc(x.withWhom||'导师沟通')}</div>${x.actions?`<div class="meta">下一步：${esc(x.actions).slice(0,100)}</div>`:''}</div>`).join('')||'<div class="empty">还没有导师会议记录。建议每次沟通后把“导师说了什么、下一步做什么”立即记下来。</div>';
+ }else if(resourceTab==='figures'){
+  body=state.figures.map(x=>`<div class="card" onclick="figureForm('${x.id}')"><div class="row"><div class="title">${esc(x.no||'未编号')} ${esc(x.title)}</div>${statusChip(x.status||'待制作')}</div><div class="meta">${esc(x.kind||'图')} · ${esc(x.chapter||'未指定章节')} · 图题${x.captionChecked?'✓':'○'} · 正文引用${x.citedInText?'✓':'○'} · 来源${x.sourceChecked?'✓':'○'}</div>${x.notes?`<div class="meta">${esc(x.notes)}</div>`:''}</div>`).join('')||'<div class="empty">还没有图表清单。后期最容易漏的是编号、图题、来源和正文引用。</div>';
+ }else if(resourceTab==='milestones'){
+  body=state.milestones.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date))).map(x=>`<div class="card" onclick="milestoneForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${x.date?dueBadge(x.date,x.status==='已完成'):statusChip(x.status||'待完成')}</div><div class="meta">${esc(x.date||'未定日期')} · ${esc(x.status||'待完成')}</div></div>`).join('')||'<div class="empty">还没有时间节点。可添加初稿、预答辩、送审、答辩、定稿等。</div>';
+ }else if(resourceTab==='versions'){
+  body=state.versions.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).map(x=>`<div class="card" onclick="versionForm('${x.id}')"><div class="row"><div class="title">${esc(x.name)}</div><span class="chip blue">${esc(x.date||'')}</span></div><div class="meta">${esc(x.stage||'未分类')} · 当时 ${fmt(x.wordCount||0)} 字${x.fileLocation?' · '+esc(x.fileLocation):''}</div>${x.note?`<div class="meta">${esc(x.note)}</div>`:''}</div>`).join('')||'<div class="empty">还没有版本记录。形成重要稿件时记一笔，避免“哪个才是最新版”。</div>';
+ }else if(resourceTab==='finalcheck'){
+  const done=state.finalChecks.filter(x=>x.done).length;body=`<div class="card"><div class="row"><div><div class="title">定稿检查进度</div><div class="meta">建议送审/答辩前逐项清零</div></div><div class="progress-ring" style="--ring:${pct(done,state.finalChecks.length)}%"><b>${done}/${state.finalChecks.length}</b></div></div></div>`+state.finalChecks.map(x=>`<div class="card"><div class="checkrow"><input type="checkbox" ${x.done?'checked':''} onchange="toggleFinalCheck('${x.id}',this.checked)"><div style="flex:1"><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.category)}${x.notes?' · '+esc(x.notes):''}</div></div><button class="pill-btn" style="padding:6px 8px" onclick="finalCheckForm('${x.id}')">编辑</button></div></div>`).join('')+`<button class="pill-btn" style="width:100%" onclick="finalCheckForm()">+ 自定义检查项</button>`;
+ }else{
+  body=state.defense.slice().sort((a,b)=>(a.status==='已完成')-(b.status==='已完成')).map(x=>`<div class="card" onclick="defenseForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待准备')}</div><div class="meta">${esc(x.type||'答辩事项')} · 熟悉度 ${x.confidence||1}/5</div>${x.answer?`<div class="meta">${esc(x.answer).slice(0,100)}</div>`:''}</div>`).join('')||'<div class="empty">还没有答辩准备记录。可记录PPT、陈述稿、可能提问、回答要点和材料清单。</div>';
+ }
+ $('#view-resources').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>资料与流程</h2><span class="sub">从写作到定稿/答辩</span></div><div class="tabs">${tabs.map(t=>`<button class="${resourceTab===t[0]?'active':''}" onclick="resourceTab='${t[0]}';renderResources()">${t[1]}</button>`).join('')}</div>${body}`;
 }
-function weekData(){
-  const arr=[];
-  const now=new Date();
-  const dow=(now.getDay()+6)%7;
-  const mon=new Date(now);mon.setDate(now.getDate()-dow);
-  for(let i=0;i<7;i++){
-    const d=new Date(mon);d.setDate(mon.getDate()+i);
-    const k=d.toISOString().slice(0,10);
-    arr.push({date:k,label:'一二三四五六日'[i],value:state.writingLogs.filter(x=>x.date===k).reduce((s,x)=>s+Number(x.words||0),0)});
-  }
-  return arr;
-}
-function monthData(){
-  const now=new Date(), y=now.getFullYear(), m=now.getMonth();
-  const days=new Date(y,m+1,0).getDate();
-  const buckets=[0,0,0,0,0,0];
-  state.writingLogs.forEach(x=>{
-    const d=new Date(x.date+'T00:00:00');
-    if(d.getFullYear()===y && d.getMonth()===m){
-      const idx=Math.min(5,Math.floor((d.getDate()-1)/5));
-      buckets[idx]+=Number(x.words||0);
-    }
-  });
-  return buckets.map((v,i)=>({label:i<5?`${i*5+1}-${i*5+5}日`:`26-${days}日`,value:v}));
-}
+function tagsHTML(tags){const arr=String(tags||'').split(/[,，\s]+/).filter(Boolean);return arr.length?`<div>${arr.slice(0,6).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+
+function weekData(){const arr=[],now=dateObj(iso()),dow=(now.getDay()+6)%7,mon=new Date(now);mon.setDate(now.getDate()-dow);for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const k=localISO(d);arr.push({date:k,label:'一二三四五六日'[i],value:wordsOn(k)})}return arr}
+function monthBuckets(date=iso()){const d0=dateObj(date),y=d0.getFullYear(),m=d0.getMonth(),days=new Date(y,m+1,0).getDate(),b=[0,0,0,0,0,0];state.writingLogs.forEach(x=>{const d=dateObj(x.date);if(d.getFullYear()===y&&d.getMonth()===m){b[Math.min(5,Math.floor((d.getDate()-1)/5))]+=Number(x.words||0)}});return b.map((v,i)=>({label:i<5?`${i*5+1}-${i*5+5}`:`26-${days}`,value:v}))}
+function yearData(year=new Date().getFullYear()){return Array.from({length:12},(_,m)=>({label:`${m+1}月`,value:state.writingLogs.filter(x=>{const d=dateObj(x.date);return d.getFullYear()===year&&d.getMonth()===m}).reduce((s,x)=>s+Number(x.words||0),0)}))}
+function todaySessions(){return state.writingLogs.filter(x=>x.date===iso()).map((x,i)=>({label:`${i+1}`,value:Number(x.words||0),title:x.note||chapterTitle(x.chapterId)}))}
+function barChart(data,labelPrefix=''){const max=Math.max(1,...data.map(x=>x.value));return `<div class="bar-chart">${data.map((x,i)=>`<div class="bar-wrap"><div class="bar ${i===data.length-1?'gold':''}" style="height:${Math.max(2,x.value/max*110)}px"><span class="bar-val">${x.value}</span></div><div class="bar-label">${esc(labelPrefix+x.label)}</div></div>`).join('')}</div>`}
+function rangeDates(range){const now=dateObj(iso());if(range==='today')return [iso(),iso()];if(range==='week'){const dow=(now.getDay()+6)%7;return [addDays(iso(),-dow),addDays(iso(),6-dow)]}if(range==='month'){return [`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-01`,localISO(new Date(now.getFullYear(),now.getMonth()+1,0,12))]}if(range==='year')return [`${now.getFullYear()}-01-01`,`${now.getFullYear()}-12-31`];return ['0000-01-01','9999-12-31']}
+function rangeSummary(range){const [a,b]=rangeDates(range),logs=state.writingLogs.filter(x=>x.date>=a&&x.date<=b),words=logs.reduce((s,x)=>s+Number(x.words||0),0),mins=logs.reduce((s,x)=>s+Number(x.minutes||0),0),problems=state.problems.filter(x=>(x.createdAt||'')>=a&&(x.createdAt||'')<=b).length,solved=state.problems.filter(x=>(x.resolvedAt||'')>=a&&(x.resolvedAt||'')<=b).length,todos=state.todos.filter(x=>x.done&&(x.updatedAt||'')>=a&&(x.updatedAt||'')<=b).length;return {words,mins,sessions:logs.length,problems,solved,todos}}
 function renderStats(){
-  const wk=weekData(), wmax=Math.max(1,...wk.map(x=>x.value));
-  const mon=monthData(), mmax=Math.max(1,...mon.map(x=>x.value));
-  const solved=state.problems.filter(x=>x.status==='已解决').length;
-  const feedbackDone=state.feedback.filter(x=>x.status==='已完成').length;
-  const todoDone=state.todos.filter(x=>x.done).length;
-  const figDone=state.figures.filter(x=>x.status==='已完成').length;
-  const defenseDone=state.defense.filter(x=>x.status==='已完成').length;
-  const focusCount=state.focusLogs.length;
-  const focusMinutes=state.focusLogs.reduce((s,x)=>s+Number(x.minutes||0),0);
-  const types={};state.problems.forEach(x=>types[x.type||'未分类']=(types[x.type||'未分类']||0)+1);
-  const tmax=Math.max(1,...Object.values(types));
-  const monthWords=mon.reduce((s,x)=>s+x.value,0);
-  $('#view-stats').innerHTML=`
-    <div class="section-title" style="margin-top:2px"><h2>统计总览</h2><span class="sub">所有模块一页看完</span></div>
-    <div class="chart-card"><div class="row"><div class="title">本周写作字数</div><div class="meta">单位：字</div></div>
-      <div class="bar-chart">${wk.map((x,i)=>`<div class="bar-wrap"><div class="bar ${i===6?'gold':''}" style="height:${Math.max(2,x.value/wmax*110)}px"><span class="bar-val">${x.value}</span></div><div class="bar-label">周${x.label}</div></div>`).join('')}</div>
-    </div>
-    <div class="chart-card"><div class="row"><div class="title">本月写作趋势</div><div class="meta">本月 ${fmt(monthWords)} 字</div></div>
-      <div class="bar-chart">${mon.map((x,i)=>`<div class="bar-wrap"><div class="bar ${i===mon.length-1?'gold':''}" style="height:${Math.max(2,x.value/mmax*110)}px"><span class="bar-val">${x.value}</span></div><div class="bar-label">${x.label}</div></div>`).join('')}</div>
-    </div>
-    <div class="summary-grid">
-      <div class="summary"><div class="l">累计字数</div><div class="n">${fmt(totalWords())}</div></div>
-      <div class="summary"><div class="l">专注次数</div><div class="n">${focusCount}<small>次</small></div></div>
-      <div class="summary"><div class="l">专注时长</div><div class="n">${fmt(focusMinutes)}<small>分</small></div></div>
-      <div class="summary"><div class="l">问题总数</div><div class="n">${state.problems.length}</div></div>
-      <div class="summary"><div class="l">已解决问题</div><div class="n">${solved}</div></div>
-      <div class="summary"><div class="l">文献已整理</div><div class="n">${state.literature.length}<small>篇</small></div></div>
-      <div class="summary"><div class="l">修改已完成</div><div class="n">${feedbackDone}<small>项</small></div></div>
-      <div class="summary"><div class="l">待办已完成</div><div class="n">${todoDone}<small>项</small></div></div>
-      <div class="summary"><div class="l">图表已完成</div><div class="n">${figDone}<small>项</small></div></div>
-      <div class="summary"><div class="l">论文版本</div><div class="n">${state.versions.length}<small>版</small></div></div>
-      <div class="summary"><div class="l">答辩准备完成</div><div class="n">${defenseDone}<small>项</small></div></div>
-      <div class="summary"><div class="l">连续写作</div><div class="n">${streak()}<small>天</small></div></div>
-    </div>
-    <div class="section-title"><h2>问题类型分布</h2><span class="sub">看自己最常卡在哪里</span></div>
-    ${Object.keys(types).length?Object.entries(types).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="card"><div class="row"><div class="title">${esc(k)}</div><b>${v}</b></div><div class="small-progress"><span style="width:${v/tmax*100}%"></span></div></div>`).join(''):'<div class="empty">记录几个问题后，这里会自动统计。</div>'}
-    <div class="section-title"><h2>章节完成度</h2></div>
-    ${state.chapters.map(c=>`<div class="card"><div class="row"><div class="title">${esc(c.title)}</div><b>${pct(c.currentWords,c.targetWords)}%</b></div><div class="small-progress"><span style="width:${pct(c.currentWords,c.targetWords)}%"></span></div></div>`).join('')}`;
+ const labels={today:'今日',week:'本周',month:'本月',year:'本年',all:'全部'},s=rangeSummary(statsRange);let chart='';
+ if(statsRange==='today')chart=`<div class="chart-card"><div class="row"><div class="title">今日写作会话</div><div class="meta">共 ${s.sessions} 次</div></div>${todaySessions().length?barChart(todaySessions()):'<div class="empty">今天还没有写作记录</div>'}</div>`;
+ if(statsRange==='week')chart=`<div class="chart-card"><div class="row"><div class="title">本周每日字数</div><div class="meta">单位：字</div></div>${barChart(weekData(),'周')}</div>`;
+ if(statsRange==='month')chart=`<div class="chart-card"><div class="row"><div class="title">本月写作趋势</div><div class="meta">每5天汇总</div></div>${barChart(monthBuckets())}</div>${calendarHTML()}`;
+ if(statsRange==='year')chart=`<div class="chart-card"><div class="row"><div class="title">${new Date().getFullYear()} 年月度字数</div><div class="meta">单位：字</div></div>${barChart(yearData())}</div>`;
+ if(statsRange==='all')chart=`${calendarHTML()}${allStatsHTML()}`;
+ $('#view-stats').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>统计总览</h2><span class="sub">日 / 周 / 月 / 年 / 全部</span></div><div class="segment">${Object.entries(labels).map(([k,v])=>`<button class="${statsRange===k?'active':''}" onclick="statsRange='${k}';renderStats()">${v}</button>`).join('')}</div><div class="summary-grid"><div class="summary"><div class="l">${labels[statsRange]}写作</div><div class="n">${fmt(s.words)}<small>字</small></div></div><div class="summary"><div class="l">专注时长</div><div class="n">${fmt(s.mins)}<small>分</small></div></div><div class="summary"><div class="l">写作会话</div><div class="n">${s.sessions}<small>次</small></div></div><div class="summary"><div class="l">新增/解决问题</div><div class="n">${s.problems}<small> / ${s.solved}</small></div></div><div class="summary"><div class="l">完成待办</div><div class="n">${s.todos}<small>项</small></div></div><div class="summary"><div class="l">连续写作</div><div class="n">${streak()}<small>天</small></div></div></div>${chart}`;
 }
+function allStatsHTML(){const solved=state.problems.filter(x=>x.status==='已解决').length,feedbackDone=state.feedback.filter(x=>x.status==='已完成').length,todoDone=state.todos.filter(x=>x.done).length,figDone=state.figures.filter(x=>x.status==='已完成').length,defenseDone=state.defense.filter(x=>x.status==='已完成').length,focusMinutes=state.focusLogs.reduce((s,x)=>s+Number(x.minutes||0),0),checks=state.finalChecks.filter(x=>x.done).length,eng=state.literature.filter(x=>x.language==='英文').length,cited=state.literature.filter(x=>x.status==='已引用').length,types={};state.problems.forEach(x=>types[x.type||'未分类']=(types[x.type||'未分类']||0)+1);const tmax=Math.max(1,...Object.values(types));return `<div class="section-title"><h2>全模块累计</h2></div><div class="summary-grid"><div class="summary"><div class="l">累计字数</div><div class="n">${fmt(totalWords())}</div></div><div class="summary"><div class="l">累计专注</div><div class="n">${fmt(focusMinutes)}<small>分</small></div></div><div class="summary"><div class="l">问题已解决</div><div class="n">${solved}<small> / ${state.problems.length}</small></div></div><div class="summary"><div class="l">修改已完成</div><div class="n">${feedbackDone}<small> / ${state.feedback.length}</small></div></div><div class="summary"><div class="l">待办已完成</div><div class="n">${todoDone}<small> / ${state.todos.length}</small></div></div><div class="summary"><div class="l">图表已完成</div><div class="n">${figDone}<small> / ${state.figures.length}</small></div></div><div class="summary"><div class="l">文献 / 英文 / 已引</div><div class="n">${state.literature.length}<small> / ${eng} / ${cited}</small></div></div><div class="summary"><div class="l">导师会议</div><div class="n">${state.meetings.length}<small>次</small></div></div><div class="summary"><div class="l">论文版本</div><div class="n">${state.versions.length}<small>版</small></div></div><div class="summary"><div class="l">答辩准备</div><div class="n">${defenseDone}<small> / ${state.defense.length}</small></div></div><div class="summary"><div class="l">定稿检查</div><div class="n">${checks}<small> / ${state.finalChecks.length}</small></div></div><div class="summary"><div class="l">进度预测</div><div class="n" style="font-size:14px">${predictedDate().date==='—'?'暂无':formatDateCN(predictedDate().date)}</div></div></div><div class="section-title"><h2>问题类型分布</h2></div>${Object.keys(types).length?Object.entries(types).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="card"><div class="row"><div class="title">${esc(k)}</div><b>${v}</b></div><div class="small-progress"><span style="width:${v/tmax*100}%"></span></div></div>`).join(''):'<div class="empty">记录问题后会自动统计。</div>'}<div class="section-title"><h2>章节完成度</h2></div>${state.chapters.map(c=>`<div class="card"><div class="row"><div class="title">${esc(c.title)}</div><b>${pct(c.currentWords,c.targetWords)}%</b></div><div class="small-progress"><span style="width:${pct(c.currentWords,c.targetWords)}%"></span></div></div>`).join('')}`}
+function calendarHTML(){const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth(),first=new Date(y,m,1,12),last=new Date(y,m+1,0,12),start=(first.getDay()+6)%7,days=last.getDate(),vals=[];for(let d=1;d<=days;d++){const k=localISO(new Date(y,m,d,12));vals.push(wordsOn(k))}const max=Math.max(1,...vals);let cells=Array.from({length:start},()=>'<div class="cal-day empty"></div>');for(let d=1;d<=days;d++){const k=localISO(new Date(y,m,d,12)),v=wordsOn(k),r=v/max,lv=v===0?'':r<=.25?'lv1':r<=.5?'lv2':r<=.75?'lv3':'lv4';cells.push(`<button class="cal-day ${lv} ${k===iso()?'today':''}" onclick="dayDetail('${k}')">${d}${v?'<span class="cal-dot"></span>':''}</button>`)}return `<div class="chart-card"><div class="calendar-head"><button onclick="moveCalendar(-1)">‹</button><div class="title">${y}年${m+1}月 · 写作日历</div><button onclick="moveCalendar(1)">›</button></div><div class="calendar-grid">${'一二三四五六日'.split('').map(x=>`<div class="cal-week">${x}</div>`).join('')}${cells.join('')}</div><div class="meta" style="margin-top:8px">颜色越深，写作字数越多。点某一天查看当天全部记录。</div></div>`}
+function moveCalendar(n){calendarCursor.setMonth(calendarCursor.getMonth()+n);renderStats()}
+function dayDetail(date){const logs=state.writingLogs.filter(x=>x.date===date),problems=state.problems.filter(x=>x.createdAt===date||x.resolvedAt===date),feedback=state.feedback.filter(x=>x.createdAt===date||x.completedAt===date),todos=state.todos.filter(x=>x.createdAt===date||x.updatedAt===date),meetings=state.meetings.filter(x=>x.date===date);openSheet(`<h3>${formatDateCN(date)} · 单日详情</h3><div class="mini-grid"><div class="mini-cell"><b>${fmt(wordsOn(date))}</b><span>写作字数</span></div><div class="mini-cell"><b>${minutesOn(date)}</b><span>写作分钟</span></div><div class="mini-cell"><b>${logs.length}</b><span>写作会话</span></div></div><div class="section-title"><h2>写作记录</h2></div>${logs.map(x=>`<div class="section-mini" onclick="writingLogForm('${x.id}')"><div class="title">+${fmt(x.words)} 字 · ${esc(chapterTitle(x.chapterId))}</div><div class="meta">${x.sectionId?esc(sectionTitle(x.chapterId,x.sectionId))+' · ':''}${fmt(x.minutes)} 分钟${x.note?' · '+esc(x.note):''}</div></div>`).join('')||'<div class="empty" style="padding:12px">无写作记录</div>'}<div class="section-title"><h2>其他动态</h2></div>${problems.map(x=>`<div class="section-mini"><div class="title">问题：${esc(x.title)}</div><div class="meta">${x.createdAt===date?'新增':'解决'} · ${esc(x.status)}</div></div>`).join('')}${feedback.map(x=>`<div class="section-mini"><div class="title">修改：${esc(x.title)}</div><div class="meta">${esc(x.status)}</div></div>`).join('')}${todos.map(x=>`<div class="section-mini"><div class="title">待办：${esc(x.title)}</div><div class="meta">${x.done?'已完成':'更新'}</div></div>`).join('')}${meetings.map(x=>`<div class="section-mini"><div class="title">导师会议：${esc(x.topic)}</div></div>`).join('')||(!problems.length&&!feedback.length&&!todos.length&&!meetings.length?'<div class="empty" style="padding:12px">无其他动态</div>':'')}`)}
+
 function renderFocus(){
-  $('#view-focus').innerHTML=`
-    <div class="section-title" style="margin-top:2px"><h2>专注写作</h2><button class="pill-btn" style="padding:8px 12px" onclick="go('home')">返回</button></div>
-    <div class="focus-wrap">
-      <div style="font-size:12px;opacity:.75">沉浸写作计时</div>
-      <div class="timer" id="timer">${timerText()}</div>
-      <div class="focus-controls"><button class="go" onclick="toggleFocus()">${focusRunning?'暂停':'开始专注'}</button><button class="ghost" onclick="resetFocus()">重置</button></div>
-    </div>
-    <div class="card">
-      <div class="title">完成一段后登记成果</div>
-      <div class="meta">把本次写了多少字、用了多久、写了什么记下来，章节总字数会自动累加。</div>
-      <div class="actions"><button class="btn primary" onclick="writingLogForm()">登记本次写作</button></div>
-    </div>
-    <div class="section-title"><h2>最近写作记录</h2></div>
-    ${state.writingLogs.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,8).map(x=>`<div class="card"><div class="row"><div class="title">+${fmt(x.words)} 字</div><span class="chip blue">${esc(x.date)}</span></div><div class="meta">${esc(chapterTitle(x.chapterId))} · ${fmt(x.minutes)} 分钟${x.note?' · '+esc(x.note):''}</div></div>`).join('')||'<div class="empty">还没有写作记录。</div>'}`;
+ $('#view-focus').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>专注写作</h2><button class="pill-btn" style="padding:8px 12px" onclick="go('home')">返回</button></div><div class="focus-wrap"><div style="font-size:12px;opacity:.75">沉浸写作计时</div><div class="timer" id="timer">${timerText()}</div><div class="focus-controls"><button class="go" onclick="toggleFocus()">${focusRunning?'暂停':'开始专注'}</button><button class="ghost" onclick="resetFocus()">重置</button></div></div><div class="card"><div class="title">完成一段后登记成果</div><div class="meta">记录字数、时长、章节和具体小节。章节总字数与小节字数会自动累计。</div><div class="actions"><button class="btn primary" onclick="writingLogForm()">登记本次写作</button></div></div><div class="section-title"><h2>最近写作记录</h2></div>${state.writingLogs.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,12).map(x=>`<div class="card" onclick="writingLogForm('${x.id}')"><div class="row"><div class="title">+${fmt(x.words)} 字</div><span class="chip blue">${esc(x.date)}</span></div><div class="meta">${esc(chapterTitle(x.chapterId))}${x.sectionId?' · '+esc(sectionTitle(x.chapterId,x.sectionId)):''} · ${fmt(x.minutes)} 分钟${x.note?' · '+esc(x.note):''}</div></div>`).join('')||'<div class="empty">还没有写作记录。</div>'}`;
 }
 function timerText(){const m=Math.floor(focusSeconds/60),s=focusSeconds%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
-function toggleFocus(){
-  focusRunning=!focusRunning;
-  if(focusRunning){
-    focusTimer=setInterval(()=>{focusSeconds--;const el=$('#timer');if(el)el.textContent=timerText();if(focusSeconds<=0){clearInterval(focusTimer);focusRunning=false;navigator.vibrate?.(200);alert('本轮专注完成，可以登记本次写作了。');focusSeconds=state.settings.focusMinutes*60;renderFocus()}},1000);
-  }else clearInterval(focusTimer);
-  renderFocus();
-}
+function toggleFocus(){focusRunning=!focusRunning;if(focusRunning){focusTimer=setInterval(()=>{focusSeconds--;const el=$('#timer');if(el)el.textContent=timerText();if(focusSeconds<=0){clearInterval(focusTimer);focusRunning=false;navigator.vibrate?.(200);alert('本轮专注完成，可以登记本次写作了。');focusSeconds=state.settings.focusMinutes*60;renderFocus()}},1000)}else clearInterval(focusTimer);renderFocus()}
 function resetFocus(){clearInterval(focusTimer);focusRunning=false;focusSeconds=state.settings.focusMinutes*60;renderFocus()}
+function writingLogForm(id,presetCid){const old=state.writingLogs.find(x=>x.id===id)||{date:iso(),chapterId:presetCid||state.chapters[0]?.id||'',sectionId:'',words:'',minutes:state.settings.focusMinutes,note:''};openSheet(`<h3>${id?'编辑写作记录':'登记本次写作'}</h3><div class="field"><label>日期</label><input id="f-date" type="date" value="${old.date||iso()}"></div><div class="field"><label>所属章节</label><select id="f-ch" onchange="refreshSectionSelect()">${state.chapters.map(c=>`<option value="${c.id}" ${old.chapterId===c.id?'selected':''}>${esc(c.title)}</option>`).join('')}</select></div><div class="field"><label>具体小节（可选）</label><select id="f-sec"></select></div><div class="form2"><div class="field"><label>本次新增字数</label><input id="f-words" type="number" inputmode="numeric" value="${old.words||''}"></div><div class="field"><label>实际用时（分钟）</label><input id="f-min" type="number" inputmode="numeric" value="${old.minutes||state.settings.focusMinutes}"></div></div><div class="field"><label>本次完成内容</label><textarea id="f-note">${esc(old.note||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="deleteWritingLog('${id}')">删除</button>`:'<button class="btn soft" onclick="closeSheet()">取消</button>'}<button class="btn primary" onclick="saveWritingLog('${id||''}')">保存</button></div>`);setTimeout(()=>refreshSectionSelect(old.sectionId||''),0)}
+function refreshSectionSelect(selected=''){const sel=$('#f-sec'),cid=$('#f-ch')?.value;if(!sel)return;const secs=state.chapters.find(x=>x.id===cid)?.sections||[];sel.innerHTML=`<option value="">不指定小节</option>`+secs.map(s=>`<option value="${s.id}" ${selected===s.id?'selected':''}>${esc(s.title)}</option>`).join('')}
+function applyWritingDelta(cid,sid,delta){const c=state.chapters.find(x=>x.id===cid);if(c)c.currentWords=Math.max(0,Number(c.currentWords||0)+delta);if(c&&sid){const s=c.sections.find(x=>x.id===sid);if(s)s.currentWords=Math.max(0,Number(s.currentWords||0)+delta)}}
+function saveWritingLog(id){const old=state.writingLogs.find(x=>x.id===id),words=+$('#f-words').value||0,minutes=+$('#f-min').value||0,cid=$('#f-ch').value,sid=$('#f-sec').value;if(words<=0)return alert('请填写本次新增字数');if(old)applyWritingDelta(old.chapterId,old.sectionId,-Number(old.words||0));applyWritingDelta(cid,sid,words);const v={id:id||uid(),date:$('#f-date').value,chapterId:cid,sectionId:sid,words,minutes,note:$('#f-note').value.trim()};const i=state.writingLogs.findIndex(x=>x.id===id);if(i>=0)state.writingLogs[i]=v;else state.writingLogs.push(v);if(!old&&minutes>0)state.focusLogs.push({id:uid(),date:v.date,minutes,task:v.note});closeSheet();save();go('home')}
+function deleteWritingLog(id){const x=state.writingLogs.find(v=>v.id===id);if(!x||!confirm('删除后会同步扣减对应章节/小节字数，确定吗？'))return;applyWritingDelta(x.chapterId,x.sectionId,-Number(x.words||0));state.writingLogs=state.writingLogs.filter(v=>v.id!==id);closeSheet();save()}
 
-function renderAll(){
-  renderHome();renderChapters();renderProblems();renderResources();renderStats();renderFocus();
-  $('#fab').onclick=()=>{
-    if(currentView==='chapters') chapterForm();
-    else if(currentView==='problems') problemForm();
-    else if(currentView==='resources'){
-      if(resourceTab==='literature') literatureForm();
-      if(resourceTab==='feedback') feedbackForm();
-      if(resourceTab==='todos') todoForm();
-      if(resourceTab==='figures') figureForm();
-      if(resourceTab==='milestones') milestoneForm();
-      if(resourceTab==='versions') versionForm();
-      if(resourceTab==='defense') defenseForm();
-    } else writingLogForm();
-  };
-}
+function literatureForm(id){const x=state.literature.find(v=>v.id===id)||{title:'',authors:'',year:'',language:'中文',paperType:'期刊论文',status:'待阅读',usedIn:'',tags:'',favorite:false,citation:'',notes:''};openSheet(`<h3>${id?'编辑文献':'新增文献卡片'}</h3><div class="field"><label>文献标题</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>作者</label><input id="f-authors" value="${esc(x.authors)}"></div><div class="field"><label>年份</label><input id="f-year" value="${esc(x.year)}"></div></div><div class="form2"><div class="field"><label>语言</label><select id="f-language">${['中文','英文','其他'].map(s=>`<option ${x.language===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>类型</label><select id="f-paperType">${['期刊论文','硕士论文','博士论文','会议论文','专著','标准/规范','报告','其他'].map(s=>`<option ${x.paperType===s?'selected':''}>${s}</option>`)}</select></div></div><div class="form2"><div class="field"><label>阅读状态</label><select id="f-status">${['待阅读','已浏览','已精读','已引用'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>可用于</label><input id="f-used" value="${esc(x.usedIn)}" placeholder="第1章研究现状"></div></div><div class="field"><label>标签（逗号分隔）</label><input id="f-tags" value="${esc(x.tags||'')}" placeholder="易发性, 随机森林, 近五年"></div><div class="field"><label>收藏</label><select id="f-favorite"><option value="0" ${!x.favorite?'selected':''}>普通</option><option value="1" ${x.favorite?'selected':''}>★ 重点文献</option></select></div><div class="field"><label>参考文献格式 / DOI / 链接</label><textarea id="f-citation">${esc(x.citation)}</textarea></div><div class="field"><label>核心观点 / 可引用内容</label><textarea id="f-notes">${esc(x.notes)}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('literature','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveLiterature('${id}')">保存</button></div>`)}
+function saveLiterature(id){const v={id:id||uid(),title:$('#f-title').value.trim(),authors:$('#f-authors').value.trim(),year:$('#f-year').value.trim(),language:$('#f-language').value,paperType:$('#f-paperType').value,status:$('#f-status').value,usedIn:$('#f-used').value.trim(),tags:$('#f-tags').value.trim(),favorite:$('#f-favorite').value==='1',citation:$('#f-citation').value.trim(),notes:$('#f-notes').value.trim()};if(!v.title)return alert('请填写文献标题');const i=state.literature.findIndex(x=>x.id===id);if(i>=0)state.literature[i]=v;else state.literature.push(v);closeSheet();save()}
+function feedbackForm(id){const x=state.feedback.find(v=>v.id===id)||{title:'',chapter:'',source:'导师',round:'第1轮修改',priority:'中',status:'待修改',detail:'',createdAt:iso(),completedAt:''};openSheet(`<h3>${id?'编辑修改任务':'新增导师意见 / 修改任务'}</h3><div class="field"><label>修改事项</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter)}"></div><div class="field"><label>来源</label><select id="f-source">${['导师','自查','盲审','格式规范','预答辩','正式答辩','其他'].map(s=>`<option ${x.source===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>修改轮次</label><input id="f-round" value="${esc(x.round||'')}" placeholder="例如：导师第2轮 / 预答辩后"></div><div class="form2"><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>状态</label><select id="f-status">${['待修改','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>具体意见 / 修改说明</label><textarea id="f-detail">${esc(x.detail)}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('feedback','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFeedback('${id}')">保存</button></div>`)}
+function saveFeedback(id){const old=state.feedback.find(x=>x.id===id),status=$('#f-status').value;const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),source:$('#f-source').value,round:$('#f-round').value.trim(),priority:$('#f-priority').value,status,detail:$('#f-detail').value.trim(),createdAt:old?.createdAt||iso(),completedAt:status==='已完成'?(old?.completedAt||iso()):''};if(!v.title)return alert('请填写修改事项');const i=state.feedback.findIndex(x=>x.id===id);if(i>=0)state.feedback[i]=v;else state.feedback.push(v);closeSheet();save()}
+function todoForm(id){const x=state.todos.find(v=>v.id===id)||{title:'',chapter:'',priority:'中',due:'',notes:'',done:false,createdAt:iso(),updatedAt:iso()};openSheet(`<h3>${id?'编辑待办':'新增论文待办'}</h3><div class="field"><label>待办事项</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>所属章节/模块</label><input id="f-chapter" value="${esc(x.chapter||'')}"></div><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>截止日期</label><input id="f-due" type="date" value="${esc(x.due||'')}"></div><div class="field"><label>说明</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="field"><label>状态</label><select id="f-done"><option value="0" ${!x.done?'selected':''}>待完成</option><option value="1" ${x.done?'selected':''}>已完成</option></select></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('todos','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveTodo('${id}')">保存</button></div>`)}
+function saveTodo(id){const old=state.todos.find(x=>x.id===id),done=$('#f-done').value==='1';const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),priority:$('#f-priority').value,due:$('#f-due').value,notes:$('#f-notes').value.trim(),done,createdAt:old?.createdAt||iso(),updatedAt:iso()};if(!v.title)return alert('请填写待办事项');const i=state.todos.findIndex(x=>x.id===id);if(i>=0)state.todos[i]=v;else state.todos.push(v);closeSheet();save()}
+function meetingForm(id){const x=state.meetings.find(v=>v.id===id)||{date:iso(),topic:'',withWhom:'导师',notes:'',actions:'',nextDate:''};openSheet(`<h3>${id?'编辑导师会议':'记录导师会议 / 沟通'}</h3><div class="form2"><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>沟通对象</label><input id="f-with" value="${esc(x.withWhom||'导师')}"></div></div><div class="field"><label>主题</label><input id="f-topic" value="${esc(x.topic)}" placeholder="例如：讨论第4章评价结果"></div><div class="field"><label>会议要点 / 导师原话</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="field"><label>明确的下一步行动</label><textarea id="f-actions">${esc(x.actions||'')}</textarea></div><div class="field"><label>下次沟通日期（可选）</label><input id="f-next" type="date" value="${esc(x.nextDate||'')}"></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('meetings','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveMeeting('${id}')">保存</button></div>`)}
+function saveMeeting(id){const v={id:id||uid(),date:$('#f-date').value,topic:$('#f-topic').value.trim(),withWhom:$('#f-with').value.trim(),notes:$('#f-notes').value.trim(),actions:$('#f-actions').value.trim(),nextDate:$('#f-next').value};if(!v.topic)return alert('请填写会议主题');const i=state.meetings.findIndex(x=>x.id===id);if(i>=0)state.meetings[i]=v;else state.meetings.push(v);closeSheet();save()}
+function figureForm(id){const x=state.figures.find(v=>v.id===id)||{kind:'图',no:'',title:'',chapter:'',status:'待制作',captionChecked:false,citedInText:false,sourceChecked:false,notes:''};openSheet(`<h3>${id?'编辑图表':'新增图表清单'}</h3><div class="form2"><div class="field"><label>类型</label><select id="f-kind"><option ${x.kind==='图'?'selected':''}>图</option><option ${x.kind==='表'?'selected':''}>表</option></select></div><div class="field"><label>编号</label><input id="f-no" value="${esc(x.no)}" placeholder="图3-2"></div></div><div class="field"><label>图表名称</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter)}"></div><div class="field"><label>状态</label><select id="f-status">${['待制作','制作中','待核对','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>检查项</label><select id="f-caption"><option value="0" ${!x.captionChecked?'selected':''}>图题/表题未核对</option><option value="1" ${x.captionChecked?'selected':''}>图题/表题已核对</option></select></div><div class="form2"><div class="field"><label>正文引用</label><select id="f-cited"><option value="0" ${!x.citedInText?'selected':''}>未核对</option><option value="1" ${x.citedInText?'selected':''}>已核对</option></select></div><div class="field"><label>来源/注释</label><select id="f-sourcecheck"><option value="0" ${!x.sourceChecked?'selected':''}>未核对</option><option value="1" ${x.sourceChecked?'selected':''}>已核对</option></select></div></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes)}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('figures','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFigure('${id}')">保存</button></div>`)}
+function saveFigure(id){const v={id:id||uid(),kind:$('#f-kind').value,no:$('#f-no').value.trim(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),status:$('#f-status').value,captionChecked:$('#f-caption').value==='1',citedInText:$('#f-cited').value==='1',sourceChecked:$('#f-sourcecheck').value==='1',notes:$('#f-notes').value.trim()};if(!v.title)return alert('请填写图表名称');const i=state.figures.findIndex(x=>x.id===id);if(i>=0)state.figures[i]=v;else state.figures.push(v);closeSheet();save()}
+function milestoneForm(id){const x=state.milestones.find(v=>v.id===id)||{title:'',date:'',status:'待完成'};openSheet(`<h3>${id?'编辑时间节点':'新增论文节点'}</h3><div class="field"><label>节点名称</label><input id="f-title" value="${esc(x.title)}" placeholder="初稿 / 预答辩 / 送审 / 答辩"></div><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>状态</label><select id="f-status">${['待完成','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('milestones','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveMilestone('${id}')">保存</button></div>`)}
+function saveMilestone(id){const v={id:id||uid(),title:$('#f-title').value.trim(),date:$('#f-date').value,status:$('#f-status').value};if(!v.title)return alert('请填写节点名称');const i=state.milestones.findIndex(x=>x.id===id);if(i>=0)state.milestones[i]=v;else state.milestones.push(v);closeSheet();save()}
+function versionForm(id){const x=state.versions.find(v=>v.id===id)||{name:'',date:iso(),stage:'章节稿',note:'',wordCount:totalWords(),fileLocation:''};openSheet(`<h3>${id?'编辑版本':'新增论文版本'}</h3><div class="field"><label>版本名称</label><input id="f-name" value="${esc(x.name)}" placeholder="例如：V3 导师修改稿"></div><div class="form2"><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>阶段</label><select id="f-stage">${['章节稿','初稿','导师修改稿','预答辩稿','送审稿','答辩稿','定稿','其他'].map(s=>`<option ${x.stage===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>文件位置 / 文件名（可选）</label><input id="f-location" value="${esc(x.fileLocation||'')}" placeholder="例如：iCloud/论文/V3.docx"></div><div class="field"><label>本版本主要变化</label><textarea id="f-note">${esc(x.note||'')}</textarea></div><div class="notice">保存时会自动记录当前论文累计字数：${fmt(totalWords())} 字。</div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('versions','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveVersion('${id}')">保存</button></div>`)}
+function saveVersion(id){const old=state.versions.find(x=>x.id===id);const v={id:id||uid(),name:$('#f-name').value.trim(),date:$('#f-date').value,stage:$('#f-stage').value,fileLocation:$('#f-location').value.trim(),note:$('#f-note').value.trim(),wordCount:old?.wordCount??totalWords()};if(!v.name)return alert('请填写版本名称');const i=state.versions.findIndex(x=>x.id===id);if(i>=0)state.versions[i]=v;else state.versions.push(v);closeSheet();save()}
+function finalCheckForm(id){const x=state.finalChecks.find(v=>v.id===id)||{category:'自定义',title:'',done:false,notes:''};openSheet(`<h3>${id?'编辑检查项':'新增检查项'}</h3><div class="field"><label>分类</label><input id="f-category" value="${esc(x.category)}"></div><div class="field"><label>检查内容</label><input id="f-title" value="${esc(x.title)}"></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="field"><label>状态</label><select id="f-done"><option value="0" ${!x.done?'selected':''}>未完成</option><option value="1" ${x.done?'selected':''}>已完成</option></select></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('finalChecks','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFinalCheck('${id}')">保存</button></div>`)}
+function saveFinalCheck(id){const v={id:id||uid(),category:$('#f-category').value.trim()||'自定义',title:$('#f-title').value.trim(),notes:$('#f-notes').value.trim(),done:$('#f-done').value==='1'};if(!v.title)return alert('请填写检查内容');const i=state.finalChecks.findIndex(x=>x.id===id);if(i>=0)state.finalChecks[i]=v;else state.finalChecks.push(v);closeSheet();save()}
+function toggleFinalCheck(id,done){const x=state.finalChecks.find(v=>v.id===id);if(x){x.done=done;save()}}
+function defenseForm(id){const x=state.defense.find(v=>v.id===id)||{title:'',type:'可能提问',status:'待准备',answer:'',notes:'',confidence:1,createdAt:iso(),updatedAt:iso()};openSheet(`<h3>${id?'编辑答辩准备':'新增答辩准备'}</h3><div class="field"><label>事项 / 问题</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>类型</label><select id="f-type">${['答辩PPT','自我陈述','可能提问','回答要点','材料清单','模拟答辩','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>状态</label><select id="f-status">${['待准备','准备中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>熟悉度（1=不熟，5=很稳）</label><select id="f-confidence">${[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(x.confidence)===n?'selected':''}>${n}</option>`)}</select></div><div class="field"><label>回答 / 核心要点</label><textarea id="f-answer">${esc(x.answer||'')}</textarea></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('defense','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveDefense('${id}')">保存</button></div>`)}
+function saveDefense(id){const old=state.defense.find(x=>x.id===id);const v={id:id||uid(),title:$('#f-title').value.trim(),type:$('#f-type').value,status:$('#f-status').value,confidence:+$('#f-confidence').value||1,answer:$('#f-answer').value.trim(),notes:$('#f-notes').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso()};if(!v.title)return alert('请填写答辩事项');const i=state.defense.findIndex(x=>x.id===id);if(i>=0)state.defense[i]=v;else state.defense.push(v);closeSheet();save()}
+
+function globalSearch(){openSheet(`<h3>全局搜索</h3><div class="searchbox"><input id="globalQ" placeholder="搜章节、问题、文献、导师意见、待办、图表……" oninput="runGlobalSearch(this.value)" autofocus></div><div id="searchResults"><div class="empty">输入关键词即可搜索全部论文记录。</div></div>`);setTimeout(()=>$('#globalQ')?.focus(),100)}
+function runGlobalSearch(q){q=String(q||'').trim().toLowerCase();const box=$('#searchResults');if(!q){box.innerHTML='<div class="empty">输入关键词即可搜索全部论文记录。</div>';return}let r=[];const push=(type,title,text,open)=>{if((title+' '+text).toLowerCase().includes(q))r.push({type,title,text,open})};state.chapters.forEach(x=>{push('章节',x.title,x.notes,`chapterDetail('${x.id}')`);(x.sections||[]).forEach(s=>push('小节',s.title,s.notes,`chapterDetail('${x.id}')`))});state.problems.forEach(x=>push('问题',x.title,[x.description,x.method,x.resolution,x.lesson,x.evidence].join(' '),`problemDetail('${x.id}')`));state.literature.forEach(x=>push('文献',x.title,[x.authors,x.tags,x.notes,x.citation,x.usedIn].join(' '),`literatureForm('${x.id}')`));state.feedback.forEach(x=>push('修改',x.title,x.detail,`feedbackForm('${x.id}')`));state.todos.forEach(x=>push('待办',x.title,x.notes,`todoForm('${x.id}')`));state.meetings.forEach(x=>push('会议',x.topic,[x.notes,x.actions].join(' '),`meetingForm('${x.id}')`));state.figures.forEach(x=>push('图表',(x.no||'')+' '+x.title,x.notes,`figureForm('${x.id}')`));state.versions.forEach(x=>push('版本',x.name,x.note,`versionForm('${x.id}')`));state.defense.forEach(x=>push('答辩',x.title,[x.answer,x.notes].join(' '),`defenseForm('${x.id}')`));box.innerHTML=r.length?r.slice(0,40).map(x=>`<div class="card" onclick="closeSheet();setTimeout(()=>${x.open},50)"><div class="row"><div class="title">${esc(x.title)}</div><span class="chip blue">${x.type}</span></div><div class="meta">${esc(x.text||'').slice(0,110)}</div></div>`).join(''):'<div class="empty">没有找到匹配内容。</div>'}
+
+function settingsForm(){const s=state.settings;openSheet(`<h3>论文设置</h3><div class="field"><label>论文题目</label><input id="f-thesis" value="${esc(s.thesisTitle)}"></div><div class="form2"><div class="field"><label>总目标字数</label><input id="f-total" type="number" value="${s.totalWordGoal}"></div><div class="field"><label>每日目标字数</label><input id="f-daily" type="number" value="${s.dailyWordGoal}"></div></div><div class="form2"><div class="field"><label>写作开始日期</label><input id="f-start" type="date" value="${s.startDate||iso()}"></div><div class="field"><label>预计提交日期</label><input id="f-submit" type="date" value="${s.submissionDate}"></div></div><div class="field"><label>答辩日期</label><input id="f-defense" type="date" value="${s.defenseDate}"></div><div class="form2"><div class="field"><label>专注分钟</label><input id="f-focus" type="number" value="${s.focusMinutes}"></div><div class="field"><label>休息分钟</label><input id="f-break" type="number" value="${s.breakMinutes}"></div></div><div class="notice">所有论文记录默认只保存在当前浏览器/PWA本地。建议定期导出 JSON，并保留 iCloud/电脑副本。</div><div class="actions"><button class="btn primary" onclick="saveSettings()">保存设置</button></div>`)}
+function saveSettings(){state.settings={thesisTitle:$('#f-thesis').value.trim(),totalWordGoal:+$('#f-total').value||80000,dailyWordGoal:+$('#f-daily').value||2000,startDate:$('#f-start').value||iso(),submissionDate:$('#f-submit').value,defenseDate:$('#f-defense').value,focusMinutes:+$('#f-focus').value||25,breakMinutes:+$('#f-break').value||5};focusSeconds=state.settings.focusMinutes*60;closeSheet();save()}
+function removeItem(key,id){if(!confirm('确定删除这条记录吗？'))return;state[key]=state[key].filter(x=>x.id!==id);closeSheet();save()}
+function exportBackup(){maybeSnapshot(true);const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文工作台-V3-备份-${iso()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function importBackup(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const v=JSON.parse(r.result);if(!v||typeof v!=='object')throw new Error();if(confirm('导入会覆盖当前数据，确定继续吗？')){maybeSnapshot(true);state=normalize(v);save();alert('导入成功')}}catch(e){alert('备份文件无法读取')}};r.readAsText(f)};inp.click()}
+function exportCSV(){let rows=[['模块','日期','标题','章节/用途','状态','详情']];state.writingLogs.forEach(x=>rows.push(['写作',x.date,`${x.words}字`,chapterTitle(x.chapterId),`${x.minutes}分钟`,x.note||'']));state.problems.forEach(x=>rows.push(['问题',x.createdAt,x.title,x.chapter,x.status,[x.description,x.resolution,x.lesson].join(' | ')]));state.feedback.forEach(x=>rows.push(['修改',x.createdAt,x.title,x.chapter,x.status,x.detail||'']));state.todos.forEach(x=>rows.push(['待办',x.createdAt,x.title,x.chapter,x.done?'已完成':'待完成',x.notes||'']));state.literature.forEach(x=>rows.push(['文献','',x.title,x.usedIn,x.status,[x.authors,x.year,x.language,x.tags].join(' | ')]));state.meetings.forEach(x=>rows.push(['会议',x.date,x.topic,x.withWhom,'',x.actions||x.notes||'']));state.figures.forEach(x=>rows.push(['图表','',`${x.no||''} ${x.title}`,x.chapter,x.status,x.notes||'']));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文数据-${iso()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function manualSnapshot(){maybeSnapshot(true);alert('已创建本地历史快照。最多保留最近 6 份。')}
+function snapshotManager(){let arr=[];try{arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]')}catch(e){}openSheet(`<h3>本地历史快照</h3><div class="notice">用于误删或误改后的快速恢复。快照仍保存在本机，不能替代导出到 iCloud/电脑的备份。</div>${arr.map((x,i)=>`<div class="card"><div class="row"><div><div class="title">${esc(x.label||'快照')}</div><div class="meta">${new Date(x.ts).toLocaleString('zh-CN')} · ${fmt((x.state?.chapters||[]).reduce((s,c)=>s+Number(c.currentWords||0),0))}字</div></div><button class="pill-btn" style="padding:7px 9px" onclick="restoreSnapshot('${x.id}')">恢复</button></div></div>`).join('')||'<div class="empty">暂无快照。</div>'}`)}
+function restoreSnapshot(id){let arr=[];try{arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]')}catch(e){}const x=arr.find(v=>v.id===id);if(!x||!confirm('恢复该快照会覆盖当前数据，确定吗？'))return;state=normalize(x.state);save();closeSheet();alert('已恢复快照')}
+
+function renderAll(){renderHome();renderChapters();renderProblems();renderResources();renderStats();renderFocus();$('#fab').onclick=()=>{if(currentView==='chapters')chapterForm();else if(currentView==='problems')problemForm();else if(currentView==='resources'){if(resourceTab==='literature')literatureForm();if(resourceTab==='feedback')feedbackForm();if(resourceTab==='todos')todoForm();if(resourceTab==='meetings')meetingForm();if(resourceTab==='figures')figureForm();if(resourceTab==='milestones')milestoneForm();if(resourceTab==='versions')versionForm();if(resourceTab==='finalcheck')finalCheckForm();if(resourceTab==='defense')defenseForm()}else writingLogForm()}}
 $$('.navbtn').forEach(b=>b.onclick=()=>go(b.dataset.view));
-
-function chapterForm(id){
-  const x=state.chapters.find(v=>v.id===id)||{id:'',title:'',targetWords:0,currentWords:0,status:'未开始',notes:''};
-  openSheet(`<h3>${id?'编辑章节':'新增章节'}</h3>
-    <div class="field"><label>章节名称</label><input id="f-title" value="${esc(x.title)}"></div>
-    <div class="form2"><div class="field"><label>目标字数</label><input id="f-target" type="number" value="${x.targetWords||0}"></div><div class="field"><label>当前字数</label><input id="f-current" type="number" value="${x.currentWords||0}"></div></div>
-    <div class="field"><label>状态</label><select id="f-status">${['未开始','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div>
-    <div class="field"><label>备注 / 待补内容</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('chapters','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveChapter('${id}')">保存</button></div>`);
-}
-function saveChapter(id){
-  const v={id:id||uid(),title:$('#f-title').value.trim(),targetWords:+$('#f-target').value||0,currentWords:+$('#f-current').value||0,status:$('#f-status').value,notes:$('#f-notes').value.trim()};
-  if(!v.title)return alert('请填写章节名称');
-  const i=state.chapters.findIndex(x=>x.id===id); if(i>=0)state.chapters[i]=v;else state.chapters.push(v); closeSheet();save();
-}
-function writingLogForm(){
-  openSheet(`<h3>登记本次写作</h3>
-    <div class="field"><label>日期</label><input id="f-date" type="date" value="${iso()}"></div>
-    <div class="field"><label>所属章节</label><select id="f-ch">${state.chapters.map(c=>`<option value="${c.id}">${esc(c.title)}</option>`).join('')}</select></div>
-    <div class="form2"><div class="field"><label>本次新增字数</label><input id="f-words" type="number" inputmode="numeric" placeholder="例如 800"></div><div class="field"><label>实际用时（分钟）</label><input id="f-min" type="number" inputmode="numeric" value="${state.settings.focusMinutes}"></div></div>
-    <div class="field"><label>本次完成内容</label><textarea id="f-note" placeholder="例如：完成4.2节第一版，并补充图表说明"></textarea></div>
-    <div class="actions"><button class="btn soft" onclick="closeSheet()">取消</button><button class="btn primary" onclick="saveWritingLog()">保存并累计章节</button></div>`);
-}
-function saveWritingLog(){
-  const words=+$('#f-words').value||0,minutes=+$('#f-min').value||0,cid=$('#f-ch').value;
-  if(words<=0)return alert('请填写本次新增字数');
-  state.writingLogs.push({id:uid(),date:$('#f-date').value,chapterId:cid,words,minutes,note:$('#f-note').value.trim()});
-  const c=state.chapters.find(x=>x.id===cid);if(c)c.currentWords=Number(c.currentWords||0)+words;
-  if(minutes>0)state.focusLogs.push({id:uid(),date:$('#f-date').value,minutes,task:$('#f-note').value.trim()});
-  closeSheet();save();go('home');
-}
-function problemForm(id){
-  const x=state.problems.find(v=>v.id===id)||{title:'',chapter:'',type:'结构逻辑',description:'',status:'未解决',method:'',resolution:'',lesson:'',priority:'中',createdAt:iso()};
-  openSheet(`<h3>${id?'编辑问题':'记录今天遇到的问题'}</h3>
-    <div class="field"><label>问题标题</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：第4章图表说明怎么写"></div>
-    <div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter||'')}" placeholder="第4章"></div><div class="field"><label>问题类型</label><select id="f-type">${['结构逻辑','文字表达','图表规范','数据分析','文献引用','格式排版','导师意见','答辩准备','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>问题描述</label><textarea id="f-desc">${esc(x.description||'')}</textarea></div>
-    <div class="form2"><div class="field"><label>状态</label><select id="f-status">${['未解决','处理中','已解决','需继续跟进'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>解决方式 / 处理过程</label><textarea id="f-method" placeholder="问导师、查文献、查规范、自己试验……">${esc(x.method||'')}</textarea></div>
-    <div class="field"><label>最终解决结果</label><textarea id="f-resolution" placeholder="解决后把最终做法写在这里">${esc(x.resolution||'')}</textarea></div>
-    <div class="field"><label>经验总结</label><textarea id="f-lesson" placeholder="以后遇到同类问题怎么处理">${esc(x.lesson||'')}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('problems','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveProblem('${id}')">保存</button></div>`);
-}
-function saveProblem(id){
-  const old=state.problems.find(x=>x.id===id);
-  const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),type:$('#f-type').value,description:$('#f-desc').value.trim(),status:$('#f-status').value,priority:$('#f-priority').value,method:$('#f-method').value.trim(),resolution:$('#f-resolution').value.trim(),lesson:$('#f-lesson').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso()};
-  if(!v.title)return alert('请填写问题标题');
-  const i=state.problems.findIndex(x=>x.id===id);if(i>=0)state.problems[i]=v;else state.problems.push(v);closeSheet();save();
-}
-function problemDetail(id){
-  const x=state.problems.find(v=>v.id===id); if(!x)return;
-  openSheet(`<h3>${esc(x.title)}</h3>
-    <div class="row"><div class="meta">${esc(x.chapter||'未指定章节')} · ${esc(x.type||'未分类')} · ${esc(x.priority||'中')}优先级</div>${statusChip(x.status)}</div>
-    ${x.description?`<div class="detail-block"><b>问题描述</b><p>${esc(x.description)}</p></div>`:''}
-    ${x.method?`<div class="detail-block"><b>处理过程</b><p>${esc(x.method)}</p></div>`:''}
-    ${x.resolution?`<div class="detail-block"><b>解决结果</b><p>${esc(x.resolution)}</p></div>`:''}
-    ${x.lesson?`<div class="detail-block"><b>经验总结</b><p>${esc(x.lesson)}</p></div>`:''}
-    <div class="actions"><button class="btn soft" onclick="closeSheet();problemForm('${id}')">编辑</button>${x.status!=='已解决'?`<button class="btn primary" onclick="markSolved('${id}')">标记已解决</button>`:''}</div>`);
-}
-function markSolved(id){const x=state.problems.find(v=>v.id===id);if(x){x.status='已解决';x.updatedAt=iso();}closeSheet();save()}
-
-function literatureForm(id){
-  const x=state.literature.find(v=>v.id===id)||{title:'',authors:'',year:'',status:'待阅读',usedIn:'',citation:'',notes:''};
-  openSheet(`<h3>${id?'编辑文献':'新增文献卡片'}</h3>
-    <div class="field"><label>文献标题</label><input id="f-title" value="${esc(x.title)}"></div>
-    <div class="form2"><div class="field"><label>作者</label><input id="f-authors" value="${esc(x.authors)}"></div><div class="field"><label>年份</label><input id="f-year" value="${esc(x.year)}"></div></div>
-    <div class="form2"><div class="field"><label>阅读状态</label><select id="f-status">${['待阅读','已浏览','已精读','已引用'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>可用于</label><input id="f-used" value="${esc(x.usedIn)}" placeholder="第1章研究现状"></div></div>
-    <div class="field"><label>参考文献格式 / DOI / 链接</label><textarea id="f-citation">${esc(x.citation)}</textarea></div>
-    <div class="field"><label>核心观点 / 可引用内容</label><textarea id="f-notes">${esc(x.notes)}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('literature','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveLiterature('${id}')">保存</button></div>`);
-}
-function saveLiterature(id){
-  const v={id:id||uid(),title:$('#f-title').value.trim(),authors:$('#f-authors').value.trim(),year:$('#f-year').value.trim(),status:$('#f-status').value,usedIn:$('#f-used').value.trim(),citation:$('#f-citation').value.trim(),notes:$('#f-notes').value.trim()};
-  if(!v.title)return alert('请填写文献标题');const i=state.literature.findIndex(x=>x.id===id);if(i>=0)state.literature[i]=v;else state.literature.push(v);closeSheet();save();
-}
-function feedbackForm(id){
-  const x=state.feedback.find(v=>v.id===id)||{title:'',chapter:'',source:'导师',priority:'中',status:'待修改',detail:'',createdAt:iso(),completedAt:''};
-  openSheet(`<h3>${id?'编辑修改任务':'新增导师意见 / 修改任务'}</h3>
-    <div class="field"><label>修改事项</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：细化第3章评价因子来源"></div>
-    <div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter)}"></div><div class="field"><label>来源</label><select id="f-source">${['导师','自查','盲审','格式规范','答辩意见','其他'].map(s=>`<option ${x.source===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="form2"><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>状态</label><select id="f-status">${['待修改','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>具体意见 / 修改说明</label><textarea id="f-detail">${esc(x.detail)}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('feedback','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFeedback('${id}')">保存</button></div>`);
-}
-function saveFeedback(id){
-  const old=state.feedback.find(x=>x.id===id),status=$('#f-status').value;
-  const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),source:$('#f-source').value,priority:$('#f-priority').value,status,detail:$('#f-detail').value.trim(),createdAt:old?.createdAt||iso(),completedAt:status==='已完成'?(old?.completedAt||iso()):''};
-  if(!v.title)return alert('请填写修改事项');const i=state.feedback.findIndex(x=>x.id===id);if(i>=0)state.feedback[i]=v;else state.feedback.push(v);closeSheet();save();
-}
-function figureForm(id){
-  const x=state.figures.find(v=>v.id===id)||{kind:'图',no:'',title:'',chapter:'',status:'待制作',notes:''};
-  openSheet(`<h3>${id?'编辑图表':'新增图表清单'}</h3>
-    <div class="form2"><div class="field"><label>类型</label><select id="f-kind"><option ${x.kind==='图'?'selected':''}>图</option><option ${x.kind==='表'?'selected':''}>表</option></select></div><div class="field"><label>编号</label><input id="f-no" value="${esc(x.no)}" placeholder="图3-2"></div></div>
-    <div class="field"><label>图表名称</label><input id="f-title" value="${esc(x.title)}"></div>
-    <div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter)}"></div><div class="field"><label>状态</label><select id="f-status">${['待制作','制作中','待核对','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>备注</label><textarea id="f-notes" placeholder="是否已编号、是否正文引用、需要修改什么">${esc(x.notes)}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('figures','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFigure('${id}')">保存</button></div>`);
-}
-function saveFigure(id){
-  const v={id:id||uid(),kind:$('#f-kind').value,no:$('#f-no').value.trim(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),status:$('#f-status').value,notes:$('#f-notes').value.trim()};
-  if(!v.title)return alert('请填写图表名称');const i=state.figures.findIndex(x=>x.id===id);if(i>=0)state.figures[i]=v;else state.figures.push(v);closeSheet();save();
-}
-function milestoneForm(id){
-  const x=state.milestones.find(v=>v.id===id)||{title:'',date:'',status:'待完成'};
-  openSheet(`<h3>${id?'编辑时间节点':'新增论文节点'}</h3>
-    <div class="field"><label>节点名称</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：完成初稿 / 预答辩 / 送审"></div>
-    <div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div>
-    <div class="field"><label>状态</label><select id="f-status">${['待完成','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('milestones','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveMilestone('${id}')">保存</button></div>`);
-}
-function saveMilestone(id){
-  const v={id:id||uid(),title:$('#f-title').value.trim(),date:$('#f-date').value,status:$('#f-status').value};
-  if(!v.title)return alert('请填写节点名称');const i=state.milestones.findIndex(x=>x.id===id);if(i>=0)state.milestones[i]=v;else state.milestones.push(v);closeSheet();save();
-}
-
-function todoForm(id){
-  const x=state.todos.find(v=>v.id===id)||{title:'',chapter:'',priority:'中',due:'',notes:'',done:false,createdAt:iso()};
-  openSheet(`<h3>${id?'编辑待办':'新增论文待办'}</h3>
-    <div class="field"><label>待办事项</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：补写4.2节结果说明"></div>
-    <div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter||'')}"></div><div class="field"><label>优先级</label><select id="f-priority">${['高','中','低'].map(s=>`<option ${x.priority===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>截止日期</label><input id="f-due" type="date" value="${esc(x.due||'')}"></div>
-    <div class="field"><label>说明</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
-    <div class="field"><label>状态</label><select id="f-done"><option value="0" ${!x.done?'selected':''}>待完成</option><option value="1" ${x.done?'selected':''}>已完成</option></select></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('todos','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveTodo('${id}')">保存</button></div>`);
-}
-function saveTodo(id){
-  const old=state.todos.find(x=>x.id===id),done=$('#f-done').value==='1';
-  const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),priority:$('#f-priority').value,due:$('#f-due').value,notes:$('#f-notes').value.trim(),done,createdAt:old?.createdAt||iso(),updatedAt:iso()};
-  if(!v.title)return alert('请填写待办事项');const i=state.todos.findIndex(x=>x.id===id);if(i>=0)state.todos[i]=v;else state.todos.push(v);closeSheet();save();
-}
-function versionForm(id){
-  const x=state.versions.find(v=>v.id===id)||{name:'',date:iso(),stage:'章节稿',note:''};
-  openSheet(`<h3>${id?'编辑版本':'新增论文版本'}</h3>
-    <div class="field"><label>版本名称</label><input id="f-name" value="${esc(x.name)}" placeholder="例如：V3 导师修改稿"></div>
-    <div class="form2"><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>阶段</label><select id="f-stage">${['章节稿','初稿','导师修改稿','预答辩稿','送审稿','答辩稿','定稿','其他'].map(s=>`<option ${x.stage===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>本版本主要变化</label><textarea id="f-note" placeholder="例如：补充第4章结果分析，统一图题格式">${esc(x.note||'')}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('versions','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveVersion('${id}')">保存</button></div>`);
-}
-function saveVersion(id){
-  const v={id:id||uid(),name:$('#f-name').value.trim(),date:$('#f-date').value,stage:$('#f-stage').value,note:$('#f-note').value.trim()};
-  if(!v.name)return alert('请填写版本名称');const i=state.versions.findIndex(x=>x.id===id);if(i>=0)state.versions[i]=v;else state.versions.push(v);closeSheet();save();
-}
-function defenseForm(id){
-  const x=state.defense.find(v=>v.id===id)||{title:'',type:'可能提问',status:'待准备',answer:'',notes:'',createdAt:iso(),updatedAt:iso()};
-  openSheet(`<h3>${id?'编辑答辩准备':'新增答辩准备'}</h3>
-    <div class="field"><label>事项 / 问题</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：为什么选择随机森林模型？"></div>
-    <div class="form2"><div class="field"><label>类型</label><select id="f-type">${['答辩PPT','自我陈述','可能提问','回答要点','材料清单','模拟答辩','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>状态</label><select id="f-status">${['待准备','准备中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div>
-    <div class="field"><label>回答 / 核心要点</label><textarea id="f-answer" placeholder="把回答框架、数据、依据或讲稿要点写在这里">${esc(x.answer||'')}</textarea></div>
-    <div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
-    <div class="actions">${id?`<button class="btn danger" onclick="removeItem('defense','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveDefense('${id}')">保存</button></div>`);
-}
-function saveDefense(id){
-  const old=state.defense.find(x=>x.id===id);
-  const v={id:id||uid(),title:$('#f-title').value.trim(),type:$('#f-type').value,status:$('#f-status').value,answer:$('#f-answer').value.trim(),notes:$('#f-notes').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso()};
-  if(!v.title)return alert('请填写答辩事项');const i=state.defense.findIndex(x=>x.id===id);if(i>=0)state.defense[i]=v;else state.defense.push(v);closeSheet();save();
-}
-function settingsForm(){
-  const s=state.settings;
-  openSheet(`<h3>论文设置</h3>
-    <div class="field"><label>论文题目</label><input id="f-thesis" value="${esc(s.thesisTitle)}"></div>
-    <div class="form2"><div class="field"><label>总目标字数</label><input id="f-total" type="number" value="${s.totalWordGoal}"></div><div class="field"><label>每日目标字数</label><input id="f-daily" type="number" value="${s.dailyWordGoal}"></div></div>
-    <div class="form2"><div class="field"><label>预计提交日期</label><input id="f-submit" type="date" value="${s.submissionDate}"></div><div class="field"><label>答辩日期</label><input id="f-defense" type="date" value="${s.defenseDate}"></div></div>
-    <div class="form2"><div class="field"><label>专注分钟</label><input id="f-focus" type="number" value="${s.focusMinutes}"></div><div class="field"><label>休息分钟</label><input id="f-break" type="number" value="${s.breakMinutes}"></div></div>
-    <div class="notice">这些设置和所有论文记录都保存在当前 iPhone / 浏览器本地。建议定期导出 JSON 备份。</div>
-    <div class="actions"><button class="btn primary" onclick="saveSettings()">保存设置</button></div>`);
-}
-function saveSettings(){
-  state.settings={thesisTitle:$('#f-thesis').value.trim(),totalWordGoal:+$('#f-total').value||80000,dailyWordGoal:+$('#f-daily').value||2000,submissionDate:$('#f-submit').value,defenseDate:$('#f-defense').value,focusMinutes:+$('#f-focus').value||25,breakMinutes:+$('#f-break').value||5};
-  focusSeconds=state.settings.focusMinutes*60;closeSheet();save();
-}
-function removeItem(key,id){
-  if(!confirm('确定删除这条记录吗？'))return;
-  state[key]=state[key].filter(x=>x.id!==id);closeSheet();save();
-}
-function exportBackup(){
-  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
-  const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`学术猫论文工作台-备份-${iso()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
-}
-function importBackup(){
-  const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';
-  inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const v=JSON.parse(r.result);if(!v||typeof v!=='object')throw new Error();if(confirm('导入会覆盖当前数据，确定继续吗？')){state=Object.assign(structuredClone(defaults),v);save();alert('导入成功')}}catch(e){alert('备份文件无法读取')}};r.readAsText(f)};
-  inp.click();
-}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
-renderAll();
+maybeSnapshot();renderAll();
 </script>
 </body>
 </html>
