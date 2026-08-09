@@ -56,8 +56,9 @@ button{cursor:pointer}
 .tabs{display:flex;gap:7px;overflow:auto;padding:2px 0 10px;scrollbar-width:none}.tabs::-webkit-scrollbar{display:none}
 .tabs button{white-space:nowrap;border:1px solid var(--line);background:var(--card);padding:8px 12px;border-radius:99px;color:var(--muted);font-size:12px}
 .tabs button.active{background:var(--navy);color:#fff;border-color:var(--navy)}
-.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,253,248,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(5,1fr)}
-.navbtn{border:0;background:transparent;color:#8a8f98;font-size:10px;padding:3px 0}.navbtn .ico{font-size:19px;display:block;line-height:23px}.navbtn.active{color:var(--navy);font-weight:800}
+.bottomnav{position:fixed;left:0;right:0;bottom:0;z-index:50;background:rgba(255,253,248,.96);backdrop-filter:blur(18px);border-top:1px solid var(--line);padding:6px 8px calc(6px + env(safe-area-inset-bottom));display:flex;overflow-x:auto;overflow-y:hidden;gap:2px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;scrollbar-width:none;touch-action:pan-x}
+.bottomnav::-webkit-scrollbar{display:none}
+.navbtn{border:0;background:transparent;color:#8a8f98;font-size:10px;padding:3px 7px;flex:0 0 74px;min-width:74px;scroll-snap-align:center}.navbtn .ico{font-size:19px;display:block;line-height:23px}.navbtn.active{color:var(--navy);font-weight:800}
 .sheet-wrap{display:none;position:fixed;inset:0;z-index:100;background:rgba(12,18,30,.33);align-items:flex-end}.sheet-wrap.open{display:flex}
 .sheet{width:100%;max-height:88vh;overflow:auto;background:var(--card);border-radius:24px 24px 0 0;padding:14px 16px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -18px 50px rgba(0,0,0,.15)}
 .handle{width:42px;height:5px;background:#d8d2c8;border-radius:99px;margin:0 auto 14px}.sheet h3{margin:0 0 14px;color:var(--navy);font-size:18px}
@@ -106,6 +107,15 @@ button{cursor:pointer}
 .badge-num{display:inline-flex;min-width:22px;height:22px;padding:0 6px;align-items:center;justify-content:center;border-radius:99px;background:#eef2f8;color:var(--navy);font-size:10px;font-weight:800}
 
 @media (max-width:390px){.stats4{grid-template-columns:repeat(2,1fr)}.segment{grid-template-columns:repeat(5,1fr)}}
+
+.settings-page-head{display:flex;align-items:center;gap:12px;margin:2px 2px 16px}
+.settings-page-head img{width:54px;height:54px;border-radius:16px;object-fit:cover}
+.settings-page-head h2{margin:0;color:var(--navy);font-size:19px}.settings-page-head p{margin:4px 0 0;color:var(--muted);font-size:11px}
+.settings-section{margin:18px 0 8px}.settings-section h3{margin:0 2px 8px;color:var(--navy);font-size:14px}.settings-section .desc{font-size:10px;color:var(--muted);margin:-3px 2px 9px}
+.setting-row{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:12px 13px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.setting-row .left{min-width:0}.setting-row .name{font-size:13px;font-weight:750}.setting-row .value{font-size:10px;color:var(--muted);margin-top:3px;word-break:break-all}.setting-row .chev{color:#a0a5ad;font-size:18px}
+.danger-zone{border:1px solid #efd0cc;background:#fff9f8}.version-badge{display:inline-flex;padding:3px 7px;border-radius:99px;background:#e8eef8;color:var(--navy);font-size:10px;font-weight:800}
+
 </style>
 </head>
 <body>
@@ -124,6 +134,7 @@ button{cursor:pointer}
     <section class="view" id="view-problems"></section>
     <section class="view" id="view-resources"></section>
     <section class="view" id="view-stats"></section>
+    <section class="view" id="view-settings"></section>
     <section class="view" id="view-focus"></section>
   </main>
 </div>
@@ -136,14 +147,15 @@ button{cursor:pointer}
   <button class="navbtn" data-view="problems"><span class="ico">?</span>问题</button>
   <button class="navbtn" data-view="resources"><span class="ico">□</span>资料</button>
   <button class="navbtn" data-view="stats"><span class="ico">▥</span>统计</button>
+  <button class="navbtn" data-view="settings"><span class="ico">⚙</span>设置</button>
 </nav>
 
 <div class="sheet-wrap" id="sheetWrap"><div class="sheet"><div class="handle"></div><div id="sheetContent"></div></div></div>
 
 <script>
-const STORAGE_KEY='academicCatThesisWorkbenchV3';
-const LEGACY_KEYS=['academicCatThesisWorkbenchV2','academicCatThesisWorkbenchV1'];
-const SNAPSHOT_KEY='academicCatThesisSnapshotsV3';
+const STORAGE_KEY='academicCatThesisWorkbenchV4';
+const LEGACY_KEYS=['academicCatThesisWorkbenchV3','academicCatThesisWorkbenchV2','academicCatThesisWorkbenchV1'];
+const SNAPSHOT_KEY='academicCatThesisSnapshotsV4';
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -164,7 +176,7 @@ const defaultFinalChecks=[
  ['定稿','致谢、攻读学位期间成果等附属内容完整'],['定稿','完成全文错别字和标点检查'],['定稿','完成最终 PDF 逐页检查'],['定稿','最终版已异地备份']
 ];
 const defaults={
- settings:{thesisTitle:'我的硕士学位论文',totalWordGoal:80000,dailyWordGoal:2000,submissionDate:'2026-11-15',defenseDate:'2026-12-20',focusMinutes:25,breakMinutes:5,startDate:iso()},
+ settings:{thesisTitle:'我的硕士学位论文',school:'',degreeType:'硕士',currentStage:'正文写作',totalWordGoal:80000,dailyWordGoal:2000,weeklyWordGoal:10000,submissionDate:'2026-11-15',firstDraftDate:'',preDefenseDate:'',defenseDate:'2026-12-20',finalDate:'',focusMinutes:25,breakMinutes:5,startDate:iso(),countStreak:true,defaultChapterId:'',hideThesisTitle:false},
  chapters:[
   {id:uid(),title:'第1章 绪论',targetWords:9000,currentWords:0,status:'进行中',notes:'',sections:[]},
   {id:uid(),title:'第2章 研究区概况',targetWords:10000,currentWords:0,status:'未开始',notes:'',sections:[]},
@@ -212,6 +224,7 @@ function pct(a,b){return b?Math.max(0,Math.min(100,Math.round(Number(a||0)/Numbe
 function chapterTitle(id){return state.chapters.find(x=>x.id===id)?.title||'未指定章节'}
 function sectionTitle(cid,sid){return state.chapters.find(x=>x.id===cid)?.sections?.find(x=>x.id===sid)?.title||''}
 function streak(){
+ if(state.settings.countStreak===false)return 0;
  const dates=new Set(state.writingLogs.filter(x=>Number(x.words)>0).map(x=>x.date));if(!dates.size)return 0;
  let d=dateObj(iso()),n=0;if(!dates.has(localISO(d))){d.setDate(d.getDate()-1);if(!dates.has(localISO(d)))return 0}
  while(dates.has(localISO(d))){n++;d.setDate(d.getDate()-1)}return n;
@@ -225,7 +238,7 @@ function overdueTodos(){return state.todos.filter(x=>!x.done&&x.due&&daysBetween
 function healthSummary(){const pred=predictedDate(),sub=state.settings.submissionDate,late=pred.date!=='—'&&sub&&daysBetween(sub,pred.date)>0;return {pred,late,high:unresolvedHigh(),overdue:overdueTodos()}}
 function formatDateCN(s){if(!s)return '—';const d=dateObj(s);return `${d.getFullYear()}年${d.getMonth()+1}月${d.getDate()}日`}
 
-function go(view){currentView=view;$$('.view').forEach(v=>v.classList.remove('active'));$('#view-'+view).classList.add('active');$$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#bottomnav').style.display=view==='focus'?'none':'grid';$('#fab').style.display=(view==='stats'||view==='focus')?'none':'block';window.scrollTo({top:0,behavior:'instant'});renderAll()}
+function go(view){currentView=view;$$('.view').forEach(v=>v.classList.remove('active'));$('#view-'+view).classList.add('active');$$('.navbtn').forEach(b=>b.classList.toggle('active',b.dataset.view===view));$('#bottomnav').style.display=view==='focus'?'none':'flex';$('#fab').style.display=(view==='stats'||view==='settings'||view==='focus')?'none':'block';const active=$(`.navbtn[data-view=\"${view}\"]`);setTimeout(()=>active?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'}),0);window.scrollTo({top:0,behavior:'instant'});renderAll()}
 function openSheet(html){$('#sheetContent').innerHTML=html;$('#sheetWrap').classList.add('open')}
 function closeSheet(){$('#sheetWrap').classList.remove('open')}
 $('#sheetWrap').addEventListener('click',e=>{if(e.target.id==='sheetWrap')closeSheet()});
@@ -235,7 +248,7 @@ function renderHome(){
  const unresolved=state.problems.filter(x=>x.status!=='已解决').length,pending=state.feedback.filter(x=>x.status!=='已完成').length,todoPending=state.todos.filter(x=>!x.done).length,h=healthSummary();
  const submitLeft=state.settings.submissionDate?daysBetween(iso(),state.settings.submissionDate):null;
  $('#view-home').innerHTML=`
- <div class="hero"><div class="hero-top"><div><div class="eyebrow">论文总进度</div><div class="big">${fmt(total)} <small>/ ${fmt(goal)} 字</small></div></div><div style="font-weight:800">${p}%</div></div><div class="progress"><span style="width:${p}%"></span></div><div class="hero-note">${esc(state.settings.thesisTitle)}</div></div>
+ <div class="hero"><div class="hero-top"><div><div class="eyebrow">论文总进度</div><div class="big">${fmt(total)} <small>/ ${fmt(goal)} 字</small></div></div><div style="font-weight:800">${p}%</div></div><div class="progress"><span style="width:${p}%"></span></div><div class="hero-note">${state.settings.hideThesisTitle?'论文题目已隐藏':esc(state.settings.thesisTitle)}</div></div>
  <div class="stats4"><div class="stat"><div class="label">今日目标</div><div class="num">${fmt(state.settings.dailyWordGoal)}<span class="unit">字</span></div></div><div class="stat"><div class="label">今日已写</div><div class="num">${fmt(todayWords())}<span class="unit">字</span></div></div><div class="stat"><div class="label">连续写作</div><div class="num">${streak()}<span class="unit">天</span></div></div><div class="stat"><div class="label">答辩倒计时</div><div class="num">${dleft}<span class="unit">天</span></div></div></div>
  <div class="section-title"><h2>论文健康度</h2><span class="sub">进度风险自动提示</span></div>
  <div class="health">
@@ -255,9 +268,7 @@ function renderHome(){
   <button onclick="resourceTab='finalcheck';go('resources')"><div class="iconbox">✓</div><strong>定稿检查</strong><span>${state.finalChecks.filter(x=>x.done).length}/${state.finalChecks.length} 已完成</span></button>
  </div>
  ${urgentBlock()}
- <div class="section-title"><h2>最近动态</h2><span class="sub">所有模块自动汇总</span></div>${recentActivity()}
- <div class="section-title"><h2>工具与数据</h2><span class="sub">搜索、设置、备份</span></div>
- <div class="settings-grid"><button class="pill-btn" onclick="globalSearch()">全局搜索</button><button class="pill-btn" onclick="settingsForm()">论文设置</button><button class="pill-btn" onclick="exportBackup()">导出 JSON</button><button class="pill-btn" onclick="exportCSV()">导出 CSV</button><button class="pill-btn" onclick="snapshotManager()">历史快照</button><button class="pill-btn" onclick="manualSnapshot()">立即快照</button></div>`;
+ <div class="section-title"><h2>最近动态</h2><span class="sub">所有模块自动汇总</span></div>${recentActivity()}`;
 }
 function urgentBlock(){
  let items=[];
@@ -351,13 +362,52 @@ function calendarHTML(){const y=calendarCursor.getFullYear(),m=calendarCursor.ge
 function moveCalendar(n){calendarCursor.setMonth(calendarCursor.getMonth()+n);renderStats()}
 function dayDetail(date){const logs=state.writingLogs.filter(x=>x.date===date),problems=state.problems.filter(x=>x.createdAt===date||x.resolvedAt===date),feedback=state.feedback.filter(x=>x.createdAt===date||x.completedAt===date),todos=state.todos.filter(x=>x.createdAt===date||x.updatedAt===date),meetings=state.meetings.filter(x=>x.date===date);openSheet(`<h3>${formatDateCN(date)} · 单日详情</h3><div class="mini-grid"><div class="mini-cell"><b>${fmt(wordsOn(date))}</b><span>写作字数</span></div><div class="mini-cell"><b>${minutesOn(date)}</b><span>写作分钟</span></div><div class="mini-cell"><b>${logs.length}</b><span>写作会话</span></div></div><div class="section-title"><h2>写作记录</h2></div>${logs.map(x=>`<div class="section-mini" onclick="writingLogForm('${x.id}')"><div class="title">+${fmt(x.words)} 字 · ${esc(chapterTitle(x.chapterId))}</div><div class="meta">${x.sectionId?esc(sectionTitle(x.chapterId,x.sectionId))+' · ':''}${fmt(x.minutes)} 分钟${x.note?' · '+esc(x.note):''}</div></div>`).join('')||'<div class="empty" style="padding:12px">无写作记录</div>'}<div class="section-title"><h2>其他动态</h2></div>${problems.map(x=>`<div class="section-mini"><div class="title">问题：${esc(x.title)}</div><div class="meta">${x.createdAt===date?'新增':'解决'} · ${esc(x.status)}</div></div>`).join('')}${feedback.map(x=>`<div class="section-mini"><div class="title">修改：${esc(x.title)}</div><div class="meta">${esc(x.status)}</div></div>`).join('')}${todos.map(x=>`<div class="section-mini"><div class="title">待办：${esc(x.title)}</div><div class="meta">${x.done?'已完成':'更新'}</div></div>`).join('')}${meetings.map(x=>`<div class="section-mini"><div class="title">导师会议：${esc(x.topic)}</div></div>`).join('')||(!problems.length&&!feedback.length&&!todos.length&&!meetings.length?'<div class="empty" style="padding:12px">无其他动态</div>':'')}`)}
 
+function storageBytes(){try{return new Blob([localStorage.getItem(STORAGE_KEY)||'']).size}catch(e){return (localStorage.getItem(STORAGE_KEY)||'').length}}
+function latestSnapshotText(){try{const a=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]');return a.length?new Date(a[0].ts).toLocaleString('zh-CN'):'暂无'}catch(e){return '暂无'}}
+function renderSettings(){
+ const s=state.settings, kb=Math.max(1,Math.round(storageBytes()/1024));
+ $('#view-settings').innerHTML=`
+  <div class="settings-page-head"><img src="apple-touch-icon.png"><div><h2>设置</h2><p>论文参数、写作偏好、工具与数据集中管理</p></div></div>
+  <div class="settings-section"><h3>论文设置</h3><div class="desc">决定首页进度、倒计时和预测结果</div>
+   <div class="setting-row" onclick="settingsForm()"><div class="left"><div class="name">论文与时间节点</div><div class="value">${esc(s.thesisTitle)} · ${fmt(s.totalWordGoal)}字 · ${esc(s.currentStage||'正文写作')}</div></div><span class="chev">›</span></div>
+   <div class="setting-row"><div class="left"><div class="name">当前关键日期</div><div class="value">提交 ${s.submissionDate||'未设置'} · 答辩 ${s.defenseDate||'未设置'}</div></div></div>
+  </div>
+  <div class="settings-section"><h3>写作设置</h3><div class="desc">专注时长与写作目标</div>
+   <div class="setting-row" onclick="settingsForm()"><div class="left"><div class="name">目标与番茄钟</div><div class="value">每日 ${fmt(s.dailyWordGoal)}字 · 每周 ${fmt(s.weeklyWordGoal||0)}字 · 专注 ${s.focusMinutes} 分钟 / 休息 ${s.breakMinutes} 分钟</div></div><span class="chev">›</span></div>
+   <div class="setting-row" onclick="quickPrivacySettings()"><div class="left"><div class="name">显示偏好</div><div class="value">连续写作：${s.countStreak===false?'关闭':'开启'} · 首页论文题目：${s.hideThesisTitle?'隐藏':'显示'}</div></div><span class="chev">›</span></div>
+  </div>
+  <div class="settings-section"><h3>工具与数据</h3><div class="desc">备份、恢复、导出和本地历史快照</div>
+   <div class="settings-grid">
+    <button class="pill-btn" onclick="exportBackup()">导出 JSON</button><button class="pill-btn" onclick="importBackup()">导入 JSON</button>
+    <button class="pill-btn" onclick="exportCSV()">导出 CSV</button><button class="pill-btn" onclick="manualSnapshot()">立即快照</button>
+    <button class="pill-btn" onclick="snapshotManager()">历史快照</button><button class="pill-btn" onclick="globalSearch()">全局搜索</button>
+   </div>
+   <div class="setting-row" style="margin-top:9px"><div class="left"><div class="name">当前本地数据</div><div class="value">约 ${kb} KB · 最近快照：${latestSnapshotText()}</div></div></div>
+  </div>
+  <div class="settings-section"><h3>隐私与安全</h3><div class="desc">论文内容默认只保存在这台设备的浏览器 / PWA 本地</div>
+   <div class="setting-row"><div class="left"><div class="name">本地存储</div><div class="value">GitHub Pages 只托管程序文件，不上传你的论文记录。仍建议定期把 JSON 备份保存到“文件”或 iCloud Drive。</div></div></div>
+  </div>
+  <div class="settings-section"><h3>App 信息</h3>
+   <div class="setting-row"><div class="left"><div class="name">学术猫·论文工作台 <span class="version-badge">V4</span></div><div class="value">iPhone Web App · 支持离线缓存 · 底部导航可横向滑动</div></div></div>
+   <div class="settings-grid"><button class="pill-btn" onclick="clearAppCache()">刷新程序缓存</button><button class="pill-btn" onclick="showUsageHelp()">使用说明</button></div>
+  </div>
+  <div class="settings-section"><h3 style="color:var(--bad)">危险操作</h3>
+   <div class="setting-row danger-zone" onclick="resetAllData()"><div class="left"><div class="name" style="color:var(--bad)">清空全部论文数据</div><div class="value">会删除本机的章节、写作、问题、文献、导师意见等记录。操作前请先导出 JSON。</div></div><span class="chev">›</span></div>
+  </div>`;
+}
+function quickPrivacySettings(){const s=state.settings;openSheet(`<h3>显示偏好</h3><div class="field"><label>连续写作天数</label><select id="f-countStreak"><option value="1" ${s.countStreak!==false?'selected':''}>开启</option><option value="0" ${s.countStreak===false?'selected':''}>关闭</option></select></div><div class="field"><label>首页显示论文题目</label><select id="f-hideTitle"><option value="0" ${!s.hideThesisTitle?'selected':''}>显示</option><option value="1" ${s.hideThesisTitle?'selected':''}>隐藏</option></select></div><div class="actions"><button class="btn primary" onclick="savePrivacySettings()">保存</button></div>`)}
+function savePrivacySettings(){state.settings.countStreak=$('#f-countStreak').value==='1';state.settings.hideThesisTitle=$('#f-hideTitle').value==='1';closeSheet();save()}
+async function clearAppCache(){if(!confirm('刷新程序缓存不会删除论文记录。确定继续吗？'))return;try{if('caches'in window){for(const k of await caches.keys())await caches.delete(k)}const regs=await navigator.serviceWorker?.getRegistrations?.();if(regs)for(const r of regs)await r.update();alert('程序缓存已清理，即将重新加载。');location.reload()}catch(e){alert('缓存清理未完全完成，可以关闭 App 后重新打开。')}}
+function showUsageHelp(){openSheet(`<h3>使用说明</h3><div class="detail-block"><b>建议工作流</b><p>1. 首页看今天优先事项和论文健康度。\n2. 写作时用“开始写作”，结束后登记字数和时长。\n3. 卡点记到“问题”，解决后补解决结果和复盘。\n4. 导师意见、文献、图表、会议、版本、答辩都放在“资料”。\n5. “统计”查看日/周/月/年/全部；“设置”负责参数、备份和程序管理。</p></div><div class="detail-block"><b>数据安全</b><p>建议每周至少导出一次 JSON，并保存到 iCloud Drive 或电脑。删除网页 App、清理 Safari 网站数据或系统存储清理都可能影响本地记录。</p></div>`)}
+function resetAllData(){if(!confirm('第一次确认：真的要清空全部论文数据吗？'))return;if(!confirm('第二次确认：此操作不可撤销。请确认你已经导出 JSON 备份。'))return;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(SNAPSHOT_KEY);state=clone(defaults);save();alert('全部论文数据已清空。')}
+
 function renderFocus(){
  $('#view-focus').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>专注写作</h2><button class="pill-btn" style="padding:8px 12px" onclick="go('home')">返回</button></div><div class="focus-wrap"><div style="font-size:12px;opacity:.75">沉浸写作计时</div><div class="timer" id="timer">${timerText()}</div><div class="focus-controls"><button class="go" onclick="toggleFocus()">${focusRunning?'暂停':'开始专注'}</button><button class="ghost" onclick="resetFocus()">重置</button></div></div><div class="card"><div class="title">完成一段后登记成果</div><div class="meta">记录字数、时长、章节和具体小节。章节总字数与小节字数会自动累计。</div><div class="actions"><button class="btn primary" onclick="writingLogForm()">登记本次写作</button></div></div><div class="section-title"><h2>最近写作记录</h2></div>${state.writingLogs.slice().sort((a,b)=>String(b.date).localeCompare(String(a.date))).slice(0,12).map(x=>`<div class="card" onclick="writingLogForm('${x.id}')"><div class="row"><div class="title">+${fmt(x.words)} 字</div><span class="chip blue">${esc(x.date)}</span></div><div class="meta">${esc(chapterTitle(x.chapterId))}${x.sectionId?' · '+esc(sectionTitle(x.chapterId,x.sectionId)):''} · ${fmt(x.minutes)} 分钟${x.note?' · '+esc(x.note):''}</div></div>`).join('')||'<div class="empty">还没有写作记录。</div>'}`;
 }
 function timerText(){const m=Math.floor(focusSeconds/60),s=focusSeconds%60;return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`}
 function toggleFocus(){focusRunning=!focusRunning;if(focusRunning){focusTimer=setInterval(()=>{focusSeconds--;const el=$('#timer');if(el)el.textContent=timerText();if(focusSeconds<=0){clearInterval(focusTimer);focusRunning=false;navigator.vibrate?.(200);alert('本轮专注完成，可以登记本次写作了。');focusSeconds=state.settings.focusMinutes*60;renderFocus()}},1000)}else clearInterval(focusTimer);renderFocus()}
 function resetFocus(){clearInterval(focusTimer);focusRunning=false;focusSeconds=state.settings.focusMinutes*60;renderFocus()}
-function writingLogForm(id,presetCid){const old=state.writingLogs.find(x=>x.id===id)||{date:iso(),chapterId:presetCid||state.chapters[0]?.id||'',sectionId:'',words:'',minutes:state.settings.focusMinutes,note:''};openSheet(`<h3>${id?'编辑写作记录':'登记本次写作'}</h3><div class="field"><label>日期</label><input id="f-date" type="date" value="${old.date||iso()}"></div><div class="field"><label>所属章节</label><select id="f-ch" onchange="refreshSectionSelect()">${state.chapters.map(c=>`<option value="${c.id}" ${old.chapterId===c.id?'selected':''}>${esc(c.title)}</option>`).join('')}</select></div><div class="field"><label>具体小节（可选）</label><select id="f-sec"></select></div><div class="form2"><div class="field"><label>本次新增字数</label><input id="f-words" type="number" inputmode="numeric" value="${old.words||''}"></div><div class="field"><label>实际用时（分钟）</label><input id="f-min" type="number" inputmode="numeric" value="${old.minutes||state.settings.focusMinutes}"></div></div><div class="field"><label>本次完成内容</label><textarea id="f-note">${esc(old.note||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="deleteWritingLog('${id}')">删除</button>`:'<button class="btn soft" onclick="closeSheet()">取消</button>'}<button class="btn primary" onclick="saveWritingLog('${id||''}')">保存</button></div>`);setTimeout(()=>refreshSectionSelect(old.sectionId||''),0)}
+function writingLogForm(id,presetCid){const old=state.writingLogs.find(x=>x.id===id)||{date:iso(),chapterId:presetCid||state.settings.defaultChapterId||state.chapters[0]?.id||'',sectionId:'',words:'',minutes:state.settings.focusMinutes,note:''};openSheet(`<h3>${id?'编辑写作记录':'登记本次写作'}</h3><div class="field"><label>日期</label><input id="f-date" type="date" value="${old.date||iso()}"></div><div class="field"><label>所属章节</label><select id="f-ch" onchange="refreshSectionSelect()">${state.chapters.map(c=>`<option value="${c.id}" ${old.chapterId===c.id?'selected':''}>${esc(c.title)}</option>`).join('')}</select></div><div class="field"><label>具体小节（可选）</label><select id="f-sec"></select></div><div class="form2"><div class="field"><label>本次新增字数</label><input id="f-words" type="number" inputmode="numeric" value="${old.words||''}"></div><div class="field"><label>实际用时（分钟）</label><input id="f-min" type="number" inputmode="numeric" value="${old.minutes||state.settings.focusMinutes}"></div></div><div class="field"><label>本次完成内容</label><textarea id="f-note">${esc(old.note||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="deleteWritingLog('${id}')">删除</button>`:'<button class="btn soft" onclick="closeSheet()">取消</button>'}<button class="btn primary" onclick="saveWritingLog('${id||''}')">保存</button></div>`);setTimeout(()=>refreshSectionSelect(old.sectionId||''),0)}
 function refreshSectionSelect(selected=''){const sel=$('#f-sec'),cid=$('#f-ch')?.value;if(!sel)return;const secs=state.chapters.find(x=>x.id===cid)?.sections||[];sel.innerHTML=`<option value="">不指定小节</option>`+secs.map(s=>`<option value="${s.id}" ${selected===s.id?'selected':''}>${esc(s.title)}</option>`).join('')}
 function applyWritingDelta(cid,sid,delta){const c=state.chapters.find(x=>x.id===cid);if(c)c.currentWords=Math.max(0,Number(c.currentWords||0)+delta);if(c&&sid){const s=c.sections.find(x=>x.id===sid);if(s)s.currentWords=Math.max(0,Number(s.currentWords||0)+delta)}}
 function saveWritingLog(id){const old=state.writingLogs.find(x=>x.id===id),words=+$('#f-words').value||0,minutes=+$('#f-min').value||0,cid=$('#f-ch').value,sid=$('#f-sec').value;if(words<=0)return alert('请填写本次新增字数');if(old)applyWritingDelta(old.chapterId,old.sectionId,-Number(old.words||0));applyWritingDelta(cid,sid,words);const v={id:id||uid(),date:$('#f-date').value,chapterId:cid,sectionId:sid,words,minutes,note:$('#f-note').value.trim()};const i=state.writingLogs.findIndex(x=>x.id===id);if(i>=0)state.writingLogs[i]=v;else state.writingLogs.push(v);if(!old&&minutes>0)state.focusLogs.push({id:uid(),date:v.date,minutes,task:v.note});closeSheet();save();go('home')}
@@ -386,17 +436,28 @@ function saveDefense(id){const old=state.defense.find(x=>x.id===id);const v={id:
 function globalSearch(){openSheet(`<h3>全局搜索</h3><div class="searchbox"><input id="globalQ" placeholder="搜章节、问题、文献、导师意见、待办、图表……" oninput="runGlobalSearch(this.value)" autofocus></div><div id="searchResults"><div class="empty">输入关键词即可搜索全部论文记录。</div></div>`);setTimeout(()=>$('#globalQ')?.focus(),100)}
 function runGlobalSearch(q){q=String(q||'').trim().toLowerCase();const box=$('#searchResults');if(!q){box.innerHTML='<div class="empty">输入关键词即可搜索全部论文记录。</div>';return}let r=[];const push=(type,title,text,open)=>{if((title+' '+text).toLowerCase().includes(q))r.push({type,title,text,open})};state.chapters.forEach(x=>{push('章节',x.title,x.notes,`chapterDetail('${x.id}')`);(x.sections||[]).forEach(s=>push('小节',s.title,s.notes,`chapterDetail('${x.id}')`))});state.problems.forEach(x=>push('问题',x.title,[x.description,x.method,x.resolution,x.lesson,x.evidence].join(' '),`problemDetail('${x.id}')`));state.literature.forEach(x=>push('文献',x.title,[x.authors,x.tags,x.notes,x.citation,x.usedIn].join(' '),`literatureForm('${x.id}')`));state.feedback.forEach(x=>push('修改',x.title,x.detail,`feedbackForm('${x.id}')`));state.todos.forEach(x=>push('待办',x.title,x.notes,`todoForm('${x.id}')`));state.meetings.forEach(x=>push('会议',x.topic,[x.notes,x.actions].join(' '),`meetingForm('${x.id}')`));state.figures.forEach(x=>push('图表',(x.no||'')+' '+x.title,x.notes,`figureForm('${x.id}')`));state.versions.forEach(x=>push('版本',x.name,x.note,`versionForm('${x.id}')`));state.defense.forEach(x=>push('答辩',x.title,[x.answer,x.notes].join(' '),`defenseForm('${x.id}')`));box.innerHTML=r.length?r.slice(0,40).map(x=>`<div class="card" onclick="closeSheet();setTimeout(()=>${x.open},50)"><div class="row"><div class="title">${esc(x.title)}</div><span class="chip blue">${x.type}</span></div><div class="meta">${esc(x.text||'').slice(0,110)}</div></div>`).join(''):'<div class="empty">没有找到匹配内容。</div>'}
 
-function settingsForm(){const s=state.settings;openSheet(`<h3>论文设置</h3><div class="field"><label>论文题目</label><input id="f-thesis" value="${esc(s.thesisTitle)}"></div><div class="form2"><div class="field"><label>总目标字数</label><input id="f-total" type="number" value="${s.totalWordGoal}"></div><div class="field"><label>每日目标字数</label><input id="f-daily" type="number" value="${s.dailyWordGoal}"></div></div><div class="form2"><div class="field"><label>写作开始日期</label><input id="f-start" type="date" value="${s.startDate||iso()}"></div><div class="field"><label>预计提交日期</label><input id="f-submit" type="date" value="${s.submissionDate}"></div></div><div class="field"><label>答辩日期</label><input id="f-defense" type="date" value="${s.defenseDate}"></div><div class="form2"><div class="field"><label>专注分钟</label><input id="f-focus" type="number" value="${s.focusMinutes}"></div><div class="field"><label>休息分钟</label><input id="f-break" type="number" value="${s.breakMinutes}"></div></div><div class="notice">所有论文记录默认只保存在当前浏览器/PWA本地。建议定期导出 JSON，并保留 iCloud/电脑副本。</div><div class="actions"><button class="btn primary" onclick="saveSettings()">保存设置</button></div>`)}
-function saveSettings(){state.settings={thesisTitle:$('#f-thesis').value.trim(),totalWordGoal:+$('#f-total').value||80000,dailyWordGoal:+$('#f-daily').value||2000,startDate:$('#f-start').value||iso(),submissionDate:$('#f-submit').value,defenseDate:$('#f-defense').value,focusMinutes:+$('#f-focus').value||25,breakMinutes:+$('#f-break').value||5};focusSeconds=state.settings.focusMinutes*60;closeSheet();save()}
+function settingsForm(){const s=state.settings;openSheet(`<h3>论文与写作设置</h3>
+ <div class="field"><label>论文题目</label><input id="f-thesis" value="${esc(s.thesisTitle)}"></div>
+ <div class="form2"><div class="field"><label>学校（可选）</label><input id="f-school" value="${esc(s.school||'')}"></div><div class="field"><label>学位类型</label><select id="f-degree">${['硕士','博士','本科'].map(x=>`<option ${s.degreeType===x?'selected':''}>${x}</option>`)}</select></div></div>
+ <div class="field"><label>当前阶段</label><select id="f-stage">${['开题后整理','正文写作','导师修改','预答辩准备','送审准备','答辩准备','定稿'].map(x=>`<option ${s.currentStage===x?'selected':''}>${x}</option>`)}</select></div>
+ <div class="form2"><div class="field"><label>总目标字数</label><input id="f-total" type="number" value="${s.totalWordGoal}"></div><div class="field"><label>每日目标字数</label><input id="f-daily" type="number" value="${s.dailyWordGoal}"></div></div>
+ <div class="field"><label>每周目标字数</label><input id="f-weekly" type="number" value="${s.weeklyWordGoal||10000}"></div>
+ <div class="form2"><div class="field"><label>写作开始日期</label><input id="f-start" type="date" value="${s.startDate||iso()}"></div><div class="field"><label>初稿日期</label><input id="f-first" type="date" value="${s.firstDraftDate||''}"></div></div>
+ <div class="form2"><div class="field"><label>预计提交日期</label><input id="f-submit" type="date" value="${s.submissionDate||''}"></div><div class="field"><label>预答辩日期</label><input id="f-predef" type="date" value="${s.preDefenseDate||''}"></div></div>
+ <div class="form2"><div class="field"><label>正式答辩日期</label><input id="f-defense" type="date" value="${s.defenseDate||''}"></div><div class="field"><label>定稿日期</label><input id="f-final" type="date" value="${s.finalDate||''}"></div></div>
+ <div class="form2"><div class="field"><label>专注分钟</label><input id="f-focus" type="number" value="${s.focusMinutes}"></div><div class="field"><label>休息分钟</label><input id="f-break" type="number" value="${s.breakMinutes}"></div></div>
+ <div class="field"><label>新写作记录默认章节</label><select id="f-defaultChapter"><option value="">第1章 / 当前首章</option>${state.chapters.map(c=>`<option value="${c.id}" ${s.defaultChapterId===c.id?'selected':''}>${esc(c.title)}</option>`).join('')}</select></div>
+ <div class="notice">这些参数会影响首页进度、目标、倒计时和完成时间预测。</div><div class="actions"><button class="btn primary" onclick="saveSettings()">保存设置</button></div>`)}
+function saveSettings(){state.settings={...state.settings,thesisTitle:$('#f-thesis').value.trim()||'我的硕士学位论文',school:$('#f-school').value.trim(),degreeType:$('#f-degree').value,currentStage:$('#f-stage').value,totalWordGoal:+$('#f-total').value||80000,dailyWordGoal:+$('#f-daily').value||2000,weeklyWordGoal:+$('#f-weekly').value||10000,startDate:$('#f-start').value,firstDraftDate:$('#f-first').value,submissionDate:$('#f-submit').value,preDefenseDate:$('#f-predef').value,defenseDate:$('#f-defense').value,finalDate:$('#f-final').value,focusMinutes:+$('#f-focus').value||25,breakMinutes:+$('#f-break').value||5,defaultChapterId:$('#f-defaultChapter').value};focusSeconds=state.settings.focusMinutes*60;closeSheet();save()}
 function removeItem(key,id){if(!confirm('确定删除这条记录吗？'))return;state[key]=state[key].filter(x=>x.id!==id);closeSheet();save()}
-function exportBackup(){maybeSnapshot(true);const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文工作台-V3-备份-${iso()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportBackup(){maybeSnapshot(true);const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文工作台-V4-备份-${iso()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function importBackup(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const v=JSON.parse(r.result);if(!v||typeof v!=='object')throw new Error();if(confirm('导入会覆盖当前数据，确定继续吗？')){maybeSnapshot(true);state=normalize(v);save();alert('导入成功')}}catch(e){alert('备份文件无法读取')}};r.readAsText(f)};inp.click()}
 function exportCSV(){let rows=[['模块','日期','标题','章节/用途','状态','详情']];state.writingLogs.forEach(x=>rows.push(['写作',x.date,`${x.words}字`,chapterTitle(x.chapterId),`${x.minutes}分钟`,x.note||'']));state.problems.forEach(x=>rows.push(['问题',x.createdAt,x.title,x.chapter,x.status,[x.description,x.resolution,x.lesson].join(' | ')]));state.feedback.forEach(x=>rows.push(['修改',x.createdAt,x.title,x.chapter,x.status,x.detail||'']));state.todos.forEach(x=>rows.push(['待办',x.createdAt,x.title,x.chapter,x.done?'已完成':'待完成',x.notes||'']));state.literature.forEach(x=>rows.push(['文献','',x.title,x.usedIn,x.status,[x.authors,x.year,x.language,x.tags].join(' | ')]));state.meetings.forEach(x=>rows.push(['会议',x.date,x.topic,x.withWhom,'',x.actions||x.notes||'']));state.figures.forEach(x=>rows.push(['图表','',`${x.no||''} ${x.title}`,x.chapter,x.status,x.notes||'']));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文数据-${iso()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function manualSnapshot(){maybeSnapshot(true);alert('已创建本地历史快照。最多保留最近 6 份。')}
 function snapshotManager(){let arr=[];try{arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]')}catch(e){}openSheet(`<h3>本地历史快照</h3><div class="notice">用于误删或误改后的快速恢复。快照仍保存在本机，不能替代导出到 iCloud/电脑的备份。</div>${arr.map((x,i)=>`<div class="card"><div class="row"><div><div class="title">${esc(x.label||'快照')}</div><div class="meta">${new Date(x.ts).toLocaleString('zh-CN')} · ${fmt((x.state?.chapters||[]).reduce((s,c)=>s+Number(c.currentWords||0),0))}字</div></div><button class="pill-btn" style="padding:7px 9px" onclick="restoreSnapshot('${x.id}')">恢复</button></div></div>`).join('')||'<div class="empty">暂无快照。</div>'}`)}
 function restoreSnapshot(id){let arr=[];try{arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]')}catch(e){}const x=arr.find(v=>v.id===id);if(!x||!confirm('恢复该快照会覆盖当前数据，确定吗？'))return;state=normalize(x.state);save();closeSheet();alert('已恢复快照')}
 
-function renderAll(){renderHome();renderChapters();renderProblems();renderResources();renderStats();renderFocus();$('#fab').onclick=()=>{if(currentView==='chapters')chapterForm();else if(currentView==='problems')problemForm();else if(currentView==='resources'){if(resourceTab==='literature')literatureForm();if(resourceTab==='feedback')feedbackForm();if(resourceTab==='todos')todoForm();if(resourceTab==='meetings')meetingForm();if(resourceTab==='figures')figureForm();if(resourceTab==='milestones')milestoneForm();if(resourceTab==='versions')versionForm();if(resourceTab==='finalcheck')finalCheckForm();if(resourceTab==='defense')defenseForm()}else writingLogForm()}}
+function renderAll(){renderHome();renderChapters();renderProblems();renderResources();renderStats();renderSettings();renderFocus();$('#fab').onclick=()=>{if(currentView==='chapters')chapterForm();else if(currentView==='problems')problemForm();else if(currentView==='resources'){if(resourceTab==='literature')literatureForm();if(resourceTab==='feedback')feedbackForm();if(resourceTab==='todos')todoForm();if(resourceTab==='meetings')meetingForm();if(resourceTab==='figures')figureForm();if(resourceTab==='milestones')milestoneForm();if(resourceTab==='versions')versionForm();if(resourceTab==='finalcheck')finalCheckForm();if(resourceTab==='defense')defenseForm()}else writingLogForm()}}
 $$('.navbtn').forEach(b=>b.onclick=()=>go(b.dataset.view));
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
 maybeSnapshot();renderAll();

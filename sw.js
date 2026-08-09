@@ -1,4 +1,4 @@
-const CACHE = 'academic-cat-thesis-v3-20260809';
+const CACHE = 'academic-cat-thesis-v4-20260809';
 const ASSETS = [
   './','./index.html','./manifest.webmanifest',
   './apple-touch-icon.png','./icon-192.png','./icon-512.png','./icon-maskable-512.png'
