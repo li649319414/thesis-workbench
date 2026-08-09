@@ -116,6 +116,17 @@ button{cursor:pointer}
 .setting-row .left{min-width:0}.setting-row .name{font-size:13px;font-weight:750}.setting-row .value{font-size:10px;color:var(--muted);margin-top:3px;word-break:break-all}.setting-row .chev{color:#a0a5ad;font-size:18px}
 .danger-zone{border:1px solid #efd0cc;background:#fff9f8}.version-badge{display:inline-flex;padding:3px 7px;border-radius:99px;background:#e8eef8;color:var(--navy);font-size:10px;font-weight:800}
 
+
+.pipeline{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:10px 0}
+.pipe{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 5px;text-align:center}
+.pipe b{display:block;color:var(--navy);font-size:18px}.pipe span{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+.asset-meta{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}.asset-meta .tag{margin:0}
+.asset-status-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.asset-status{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:11px}
+.asset-status b{display:block;color:var(--navy);font-size:20px}.asset-status span{font-size:10px;color:var(--muted)}
+.evidence-row{display:grid;grid-template-columns:minmax(90px,1.7fr) repeat(4,1fr);gap:5px;align-items:center;font-size:10px;padding:8px 4px;border-bottom:1px dashed var(--line)}
+.evidence-row.head{font-weight:800;color:var(--navy);font-size:9px}.evidence-row .num{text-align:center;font-weight:800;color:var(--navy)}
+
 </style>
 </head>
 <body>
@@ -132,6 +143,7 @@ button{cursor:pointer}
     <section class="view active" id="view-home"></section>
     <section class="view" id="view-chapters"></section>
     <section class="view" id="view-problems"></section>
+    <section class="view" id="view-outcomes"></section>
     <section class="view" id="view-resources"></section>
     <section class="view" id="view-stats"></section>
     <section class="view" id="view-settings"></section>
@@ -145,6 +157,7 @@ button{cursor:pointer}
   <button class="navbtn active" data-view="home"><span class="ico">⌂</span>首页</button>
   <button class="navbtn" data-view="chapters"><span class="ico">▤</span>章节</button>
   <button class="navbtn" data-view="problems"><span class="ico">?</span>问题</button>
+  <button class="navbtn" data-view="outcomes"><span class="ico">◫</span>成果</button>
   <button class="navbtn" data-view="resources"><span class="ico">□</span>资料</button>
   <button class="navbtn" data-view="stats"><span class="ico">▥</span>统计</button>
   <button class="navbtn" data-view="settings"><span class="ico">⚙</span>设置</button>
@@ -153,9 +166,9 @@ button{cursor:pointer}
 <div class="sheet-wrap" id="sheetWrap"><div class="sheet"><div class="handle"></div><div id="sheetContent"></div></div></div>
 
 <script>
-const STORAGE_KEY='academicCatThesisWorkbenchV4';
-const LEGACY_KEYS=['academicCatThesisWorkbenchV3','academicCatThesisWorkbenchV2','academicCatThesisWorkbenchV1'];
-const SNAPSHOT_KEY='academicCatThesisSnapshotsV4';
+const STORAGE_KEY='academicCatThesisWorkbenchV5';
+const LEGACY_KEYS=['academicCatThesisWorkbenchV4','academicCatThesisWorkbenchV3','academicCatThesisWorkbenchV2','academicCatThesisWorkbenchV1'];
+const SNAPSHOT_KEY='academicCatThesisSnapshotsV5';
 const $=s=>document.querySelector(s);
 const $$=s=>[...document.querySelectorAll(s)];
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
@@ -185,14 +198,14 @@ const defaults={
   {id:uid(),title:'第5章 讨论',targetWords:9000,currentWords:0,status:'未开始',notes:'',sections:[]},
   {id:uid(),title:'第6章 结论与展望',targetWords:5000,currentWords:0,status:'未开始',notes:'',sections:[]}
  ],
- writingLogs:[],problems:[],feedback:[],literature:[],figures:[],milestones:[],todos:[],versions:[],defense:[],focusLogs:[],meetings:[],
+ writingLogs:[],problems:[],feedback:[],literature:[],figures:[],milestones:[],todos:[],versions:[],defense:[],focusLogs:[],meetings:[],dataAssets:[],processingLogs:[],analysisResults:[],
  finalChecks:defaultFinalChecks.map(([category,title])=>({id:uid(),category,title,done:false,notes:''}))
 };
 function clone(x){return JSON.parse(JSON.stringify(x))}
 function normalize(v){
  const n=Object.assign(clone(defaults),v||{});
  n.settings=Object.assign({},defaults.settings,(v&&v.settings)||{});
- ['chapters','writingLogs','problems','feedback','literature','figures','milestones','todos','versions','defense','focusLogs','meetings'].forEach(k=>{if(!Array.isArray(n[k]))n[k]=[]});
+ ['chapters','writingLogs','problems','feedback','literature','figures','milestones','todos','versions','defense','focusLogs','meetings','dataAssets','processingLogs','analysisResults'].forEach(k=>{if(!Array.isArray(n[k]))n[k]=[]});
  n.chapters=n.chapters.map(c=>Object.assign({id:uid(),title:'未命名章节',targetWords:0,currentWords:0,status:'未开始',notes:'',sections:[]},c,{sections:Array.isArray(c.sections)?c.sections:[]}));
  if(!Array.isArray(n.finalChecks)||!n.finalChecks.length)n.finalChecks=clone(defaults.finalChecks);
  return n;
@@ -205,7 +218,7 @@ function load(){
  }catch(e){return clone(defaults)}
 }
 let state=load();
-let currentView='home',resourceTab='literature',problemFilter='all',statsRange='week';
+let currentView='home',resourceTab='literature',outcomeTab='overview',problemFilter='all',statsRange='week';
 let calendarCursor=dateObj(iso());calendarCursor.setDate(1);
 let focusSeconds=state.settings.focusMinutes*60,focusTimer=null,focusRunning=false;
 
@@ -229,7 +242,7 @@ function streak(){
  let d=dateObj(iso()),n=0;if(!dates.has(localISO(d))){d.setDate(d.getDate()-1);if(!dates.has(localISO(d)))return 0}
  while(dates.has(localISO(d))){n++;d.setDate(d.getDate()-1)}return n;
 }
-function statusChip(s){const cls=['已解决','已完成','已引用','已精读'].includes(s)?'good':(['未解决','高','逾期'].includes(s)?'bad':'warn');return `<span class="chip ${cls}">${esc(s)}</span>`}
+function statusChip(s){const cls=['已解决','已完成','已引用','已精读','已获取','已整理','已核验','已入文'].includes(s)?'good':(['未解决','高','逾期','需更新','需重做'].includes(s)?'bad':'warn');return `<span class="chip ${cls}">${esc(s)}</span>`}
 function dueBadge(d,done=false){if(!d||done)return '';const diff=daysBetween(iso(),d);const cls=diff<0?'overdue':diff===0?'today':'';const txt=diff<0?`逾期 ${Math.abs(diff)} 天`:diff===0?'今天截止':`剩 ${diff} 天`;return `<span class="due-badge ${cls}">${txt}</span>`}
 function recentDailyAvg(days=14){let sum=0;for(let i=0;i<days;i++)sum+=wordsOn(addDays(iso(),-i));return Math.round(sum/days)}
 function predictedDate(){const remain=Math.max(0,Number(state.settings.totalWordGoal||0)-totalWords()),avg=recentDailyAvg(14);if(remain<=0)return {date:iso(),avg,days:0};if(avg<=0)return {date:'—',avg,days:null};const days=Math.ceil(remain/avg);return {date:addDays(iso(),days),avg,days}}
@@ -265,6 +278,7 @@ function renderHome(){
   <button onclick="todoForm()"><div class="iconbox">☐</div><strong>论文待办</strong><span>${todoPending} 项待完成</span></button>
   <button onclick="literatureForm()"><div class="iconbox">▭</div><strong>文献卡片</strong><span>${state.literature.length} 篇已录入</span></button>
   <button onclick="meetingForm()"><div class="iconbox">☷</div><strong>导师会议</strong><span>${state.meetings.length} 次已记录</span></button>
+  <button onclick="go('outcomes')"><div class="iconbox">◫</div><strong>研究成果</strong><span>${state.dataAssets.length} 数据 · ${state.processingLogs.filter(x=>['已完成','已核验','已入文'].includes(x.status)).length} 处理</span></button>
   <button onclick="resourceTab='finalcheck';go('resources')"><div class="iconbox">✓</div><strong>定稿检查</strong><span>${state.finalChecks.filter(x=>x.done).length}/${state.finalChecks.length} 已完成</span></button>
  </div>
  ${urgentBlock()}
@@ -287,6 +301,9 @@ function recentActivity(){
  state.versions.forEach(x=>items.push({date:x.date,title:`版本：${x.name}`,meta:`${x.stage||'版本记录'} · ${fmt(x.wordCount||0)}字`}));
  state.defense.forEach(x=>items.push({date:x.updatedAt||x.createdAt,title:`答辩：${x.title}`,meta:x.status||'待准备'}));
  state.meetings.forEach(x=>items.push({date:x.date,title:`导师会议：${x.topic}`,meta:x.actions?'已记录下一步行动':'会议记录'}));
+ state.dataAssets.forEach(x=>items.push({date:x.updatedAt||x.acquiredAt||x.createdAt,title:`数据：${x.name}`,meta:`${x.category||'数据'} · ${x.status||'待搜集'}`}));
+ state.processingLogs.forEach(x=>items.push({date:x.completedAt||x.updatedAt||x.createdAt,title:`处理：${x.title}`,meta:`${x.category||'数据处理'} · ${x.status||'待处理'}`}));
+ state.analysisResults.forEach(x=>items.push({date:x.completedAt||x.updatedAt||x.createdAt,title:`分析：${x.title}`,meta:`${x.type||'分析/模型'} · ${x.status||'待分析'}`}));
  items.sort((a,b)=>String(b.date).localeCompare(String(a.date)));if(!items.length)return `<div class="empty">还没有记录。今天写第一笔，就从这里开始。</div>`;
  return items.slice(0,7).map(x=>`<div class="card"><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.date||'')} · ${esc(x.meta)}</div></div>`).join('');
 }
@@ -315,7 +332,7 @@ function markSolved(id){const x=state.problems.find(v=>v.id===id);if(x){x.status
 function reopenProblem(id){const x=state.problems.find(v=>v.id===id);if(x){x.status='需继续跟进';x.resolvedAt='';x.updatedAt=iso()}closeSheet();save()}
 
 function renderResources(){
- const tabs=[['literature','文献'],['feedback','修改'],['todos','待办'],['meetings','会议'],['figures','图表'],['milestones','节点'],['versions','版本'],['finalcheck','定稿'],['defense','答辩']];let body='';
+ const tabs=[['literature','文献'],['feedback','修改'],['todos','待办'],['meetings','会议'],['milestones','节点'],['versions','版本'],['finalcheck','定稿'],['defense','答辩']];let body='';
  if(resourceTab==='literature'){
   const eng=state.literature.filter(x=>x.language==='英文').length,cited=state.literature.filter(x=>x.status==='已引用').length;
   body=`<div class="mini-grid" style="margin-bottom:10px"><div class="mini-cell"><b>${state.literature.length}</b><span>全部文献</span></div><div class="mini-cell"><b>${eng}</b><span>英文文献</span></div><div class="mini-cell"><b>${cited}</b><span>已引用</span></div></div>`+state.literature.slice().sort((a,b)=>(b.favorite?1:0)-(a.favorite?1:0)||String(b.year).localeCompare(String(a.year))).map(x=>`<div class="card" onclick="literatureForm('${x.id}')"><div class="row"><div class="title">${x.favorite?'<span class="star">★</span> ':''}${esc(x.title)}</div>${statusChip(x.status||'待阅读')}</div><div class="meta">${esc(x.authors||'')} ${esc(x.year||'')} · ${esc(x.language||'未注明')} · 用于：${esc(x.usedIn||'未指定')}</div>${tagsHTML(x.tags)}${x.notes?`<div class="meta">${esc(x.notes).slice(0,100)}</div>`:''}</div>`).join('')||'<div class="empty">还没有文献。把“读过什么、能放哪一章、核心观点”整理成文献卡片。</div>';
@@ -337,9 +354,183 @@ function renderResources(){
  }else{
   body=state.defense.slice().sort((a,b)=>(a.status==='已完成')-(b.status==='已完成')).map(x=>`<div class="card" onclick="defenseForm('${x.id}')"><div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待准备')}</div><div class="meta">${esc(x.type||'答辩事项')} · 熟悉度 ${x.confidence||1}/5</div>${x.answer?`<div class="meta">${esc(x.answer).slice(0,100)}</div>`:''}</div>`).join('')||'<div class="empty">还没有答辩准备记录。可记录PPT、陈述稿、可能提问、回答要点和材料清单。</div>';
  }
- $('#view-resources').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>资料与流程</h2><span class="sub">从写作到定稿/答辩</span></div><div class="tabs">${tabs.map(t=>`<button class="${resourceTab===t[0]?'active':''}" onclick="resourceTab='${t[0]}';renderResources()">${t[1]}</button>`).join('')}</div>${body}`;
+ $('#view-resources').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>资料与流程</h2><span class="sub">文献、导师、任务、版本与答辩</span></div><div class="tabs">${tabs.map(t=>`<button class="${resourceTab===t[0]?'active':''}" onclick="resourceTab='${t[0]}';renderResources()">${t[1]}</button>`).join('')}</div>${body}`;
 }
 function tagsHTML(tags){const arr=String(tags||'').split(/[,，\s]+/).filter(Boolean);return arr.length?`<div>${arr.slice(0,6).map(t=>`<span class="tag">${esc(t)}</span>`).join('')}</div>`:''}
+
+
+function chapterMatch(text,title){
+ text=String(text||'');title=String(title||'');
+ if(!text||!title)return false;
+ if(text.includes(title))return true;
+ const m=title.match(/第\s*(\d+)\s*章/);
+ return m?new RegExp(`第?\\s*${m[1]}\\s*章`).test(text):false;
+}
+function researchStatusCounts(){
+ const dataReady=state.dataAssets.filter(x=>['已获取','已整理','已核验','已入文'].includes(x.status)).length;
+ const dataChecked=state.dataAssets.filter(x=>['已核验','已入文'].includes(x.status)||x.quality==='已核验').length;
+ const procDone=state.processingLogs.filter(x=>['已完成','已核验','已入文'].includes(x.status)).length;
+ const analysisDone=state.analysisResults.filter(x=>['已完成','已核验','已入文'].includes(x.status)).length;
+ const figDone=state.figures.filter(x=>x.status==='已完成').length;
+ const used=state.dataAssets.filter(x=>x.useStatus==='已入文'||x.status==='已入文').length+
+            state.processingLogs.filter(x=>x.useStatus==='已入文'||x.status==='已入文').length+
+            state.analysisResults.filter(x=>x.useStatus==='已入文'||x.status==='已入文').length+
+            state.figures.filter(x=>x.citedInText).length;
+ const redo=state.dataAssets.filter(x=>x.status==='需更新'||x.quality==='存在问题').length+
+            state.processingLogs.filter(x=>x.status==='需重做'||x.quality==='存在问题').length+
+            state.analysisResults.filter(x=>x.status==='需重做'||x.quality==='存在问题').length;
+ const pendingCheck=state.dataAssets.filter(x=>!['已核验','已入文','待搜集','需更新'].includes(x.status)).length+
+                    state.processingLogs.filter(x=>x.status==='已完成').length+
+                    state.analysisResults.filter(x=>x.status==='已完成').length+
+                    state.figures.filter(x=>x.status==='待核对').length;
+ return {dataReady,dataChecked,procDone,analysisDone,figDone,used,redo,pendingCheck};
+}
+function researchChapterMatrix(){
+ return state.chapters.map(c=>({
+  title:c.title,
+  data:state.dataAssets.filter(x=>chapterMatch(x.chapter,c.title)).length,
+  proc:state.processingLogs.filter(x=>chapterMatch(x.chapter,c.title)).length,
+  ana:state.analysisResults.filter(x=>chapterMatch(x.chapter,c.title)).length,
+  fig:state.figures.filter(x=>chapterMatch(x.chapter,c.title)).length
+ }));
+}
+function researchRecent(){
+ let a=[];
+ state.dataAssets.forEach(x=>a.push({date:x.updatedAt||x.acquiredAt||x.createdAt,title:x.name,meta:`数据 · ${x.status||'待搜集'}`,open:`dataAssetForm('${x.id}')`}));
+ state.processingLogs.forEach(x=>a.push({date:x.completedAt||x.updatedAt||x.createdAt,title:x.title,meta:`处理 · ${x.status||'待处理'}`,open:`processingForm('${x.id}')`}));
+ state.analysisResults.forEach(x=>a.push({date:x.completedAt||x.updatedAt||x.createdAt,title:x.title,meta:`分析 · ${x.status||'待分析'}`,open:`analysisForm('${x.id}')`}));
+ state.figures.forEach(x=>a.push({date:x.completedAt||'',title:`${x.no||''} ${x.title}`,meta:`图表 · ${x.status||'待制作'}`,open:`figureForm('${x.id}')`}));
+ a.sort((x,y)=>String(y.date||'').localeCompare(String(x.date||'')));
+ return a.slice(0,6);
+}
+function renderOutcomes(){
+ const c=researchStatusCounts();
+ const tabs=[['overview','总览'],['data','数据'],['process','处理'],['analysis','分析'],['figures','图表']];
+ let body='';
+ if(outcomeTab==='overview'){
+  const matrix=researchChapterMatrix(),recent=researchRecent();
+  body=`
+   <div class="asset-status-grid">
+    <div class="asset-status"><b>${c.dataReady}</b><span>已获取/整理数据</span></div>
+    <div class="asset-status"><b>${c.procDone}</b><span>已完成数据处理</span></div>
+    <div class="asset-status"><b>${c.analysisDone}</b><span>已完成分析/模型</span></div>
+    <div class="asset-status"><b>${c.figDone}</b><span>已完成图表</span></div>
+    <div class="asset-status"><b>${c.used}</b><span>已入文/已引用成果</span></div>
+    <div class="asset-status"><b>${c.pendingCheck}</b><span>待核验成果</span></div>
+   </div>
+   ${c.redo?`<div class="notice" style="margin-top:9px;color:var(--bad)">有 ${c.redo} 项数据/处理/分析被标记为“存在问题、需更新或需重做”。建议优先处理。</div>`:''}
+   <div class="section-title"><h2>研究链条</h2><span class="sub">来源 → 处理 → 分析 → 入文</span></div>
+   <div class="pipeline">
+    <div class="pipe"><b>${state.dataAssets.length}</b><span>数据资产</span></div>
+    <div class="pipe"><b>${state.processingLogs.length}</b><span>处理记录</span></div>
+    <div class="pipe"><b>${state.analysisResults.length}</b><span>分析/模型</span></div>
+    <div class="pipe"><b>${state.figures.length}</b><span>图表成果</span></div>
+   </div>
+   <div class="section-title"><h2>章节证据矩阵</h2><span class="sub">每章已有多少数据、处理、分析和图表</span></div>
+   <div class="card" style="padding:9px">
+    <div class="evidence-row head"><div>章节</div><div>数据</div><div>处理</div><div>分析</div><div>图表</div></div>
+    ${matrix.map(x=>`<div class="evidence-row"><div>${esc(x.title)}</div><div class="num">${x.data}</div><div class="num">${x.proc}</div><div class="num">${x.ana}</div><div class="num">${x.fig}</div></div>`).join('')}
+   </div>
+   <div class="section-title"><h2>最近成果</h2><span class="sub">最近更新的研究资产</span></div>
+   ${recent.length?recent.map(x=>`<div class="card" onclick="${x.open}"><div class="title">${esc(x.title)}</div><div class="meta">${esc(x.date||'')} · ${esc(x.meta)}</div></div>`).join(''):'<div class="empty">还没有研究资产记录。建议先把已经拿到的数据录进去。</div>'}`;
+ }else if(outcomeTab==='data'){
+  body=state.dataAssets.slice().sort((a,b)=>String(b.updatedAt||b.acquiredAt||b.createdAt).localeCompare(String(a.updatedAt||a.acquiredAt||a.createdAt))).map(x=>`
+   <div class="card" onclick="dataAssetForm('${x.id}')">
+    <div class="row"><div class="title">${esc(x.name)}</div>${statusChip(x.status||'待搜集')}</div>
+    <div class="meta">${esc(x.category||'其他数据')} · 来源：${esc(x.source||'未记录')} · ${esc(x.format||'格式未记')}${x.resolution?' · '+esc(x.resolution):''}</div>
+    <div class="asset-meta">${x.quality?`<span class="tag">${esc(x.quality)}</span>`:''}${x.useStatus?`<span class="tag">${esc(x.useStatus)}</span>`:''}${x.chapter?`<span class="tag">${esc(x.chapter)}</span>`:''}</div>
+    ${x.fileLocation?`<div class="meta">文件：${esc(x.fileLocation)}</div>`:''}
+   </div>`).join('')||'<div class="empty">还没有数据资产。DEM、遥感影像、地质图、灾害点、降雨、道路水系、人口等都可以录进来。</div>';
+ }else if(outcomeTab==='process'){
+  body=state.processingLogs.slice().sort((a,b)=>String(b.completedAt||b.updatedAt||b.createdAt).localeCompare(String(a.completedAt||a.updatedAt||a.createdAt))).map(x=>`
+   <div class="card" onclick="processingForm('${x.id}')">
+    <div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待处理')}</div>
+    <div class="meta">${esc(x.category||'数据处理')} · ${esc(x.software||'软件未记')} · ${esc(x.chapter||'未指定章节')}</div>
+    ${x.output?`<div class="meta">输出：${esc(x.output).slice(0,100)}</div>`:''}
+    <div class="asset-meta">${x.reproducible?'<span class="tag">可复现</span>':''}${x.useStatus?`<span class="tag">${esc(x.useStatus)}</span>`:''}</div>
+   </div>`).join('')||'<div class="empty">还没有数据处理记录。裁剪、重采样、配准、矢量化、因子提取、样本构建、精度检验等都可以记录。</div>';
+ }else if(outcomeTab==='analysis'){
+  body=state.analysisResults.slice().sort((a,b)=>String(b.completedAt||b.updatedAt||b.createdAt).localeCompare(String(a.completedAt||a.updatedAt||a.createdAt))).map(x=>`
+   <div class="card" onclick="analysisForm('${x.id}')">
+    <div class="row"><div class="title">${esc(x.title)}</div>${statusChip(x.status||'待分析')}</div>
+    <div class="meta">${esc(x.type||'分析/模型')} · ${esc(x.chapter||'未指定章节')} · ${esc(x.version||'未记版本')}</div>
+    ${x.metric?`<div class="meta">关键指标：${esc(x.metric)}</div>`:''}
+    ${x.result?`<div class="meta">结果：${esc(x.result).slice(0,100)}</div>`:''}
+   </div>`).join('')||'<div class="empty">还没有分析/模型成果。可以记录统计分析、模型计算、情景分析、ROC/AUC、敏感性分析等。</div>';
+ }else{
+  body=state.figures.slice().sort((a,b)=>String(a.no||'').localeCompare(String(b.no||''))).map(x=>`
+   <div class="card" onclick="figureForm('${x.id}')">
+    <div class="row"><div class="title">${esc(x.no||'未编号')} ${esc(x.title)}</div>${statusChip(x.status||'待制作')}</div>
+    <div class="meta">${esc(x.kind||'图')} · ${esc(x.chapter||'未指定章节')} · 图题${x.captionChecked?'✓':'○'} · 正文引用${x.citedInText?'✓':'○'} · 来源${x.sourceChecked?'✓':'○'}</div>
+    ${x.sourceAsset?`<div class="meta">依据：${esc(x.sourceAsset)}</div>`:''}
+    ${x.fileLocation?`<div class="meta">文件：${esc(x.fileLocation)}</div>`:''}
+   </div>`).join('')||'<div class="empty">还没有图表成果。这里既管“做没做完”，也管编号、来源、正文引用和最终文件位置。</div>';
+ }
+ $('#view-outcomes').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>数据与研究成果</h2><span class="sub">从原始数据到论文入文</span></div><div class="tabs">${tabs.map(t=>`<button class="${outcomeTab===t[0]?'active':''}" onclick="outcomeTab='${t[0]}';renderOutcomes()">${t[1]}</button>`).join('')}</div>${body}`;
+}
+function dataAssetForm(id){
+ const x=state.dataAssets.find(v=>v.id===id)||{name:'',category:'DEM/地形数据',source:'',acquiredAt:iso(),format:'',resolution:'',crs:'',coverage:'',status:'已获取',quality:'未检查',useStatus:'未使用',chapter:'',fileLocation:'',sourceCitation:'',notes:'',createdAt:iso(),updatedAt:iso()};
+ openSheet(`<h3>${id?'编辑数据资产':'新增数据资产'}</h3>
+ <div class="field"><label>数据名称</label><input id="f-name" value="${esc(x.name)}" placeholder="例如：ALOS 12.5 m DEM"></div>
+ <div class="form2"><div class="field"><label>数据类型</label><select id="f-category">${['DEM/地形数据','遥感影像/DOM','地质资料','灾害点/隐患点','降雨/气象','道路','水系','人口/社会经济','土地利用/植被','实验数据','监测数据','统计数据','其他'].map(s=>`<option ${x.category===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>获取日期</label><input id="f-date" type="date" value="${esc(x.acquiredAt||iso())}"></div></div>
+ <div class="field"><label>来源</label><input id="f-source" value="${esc(x.source||'')}" placeholder="网站、项目报告、导师提供、实测等"></div>
+ <div class="form2"><div class="field"><label>格式</label><input id="f-format" value="${esc(x.format||'')}" placeholder="TIF / SHP / XLSX / DOCX"></div><div class="field"><label>分辨率/比例尺</label><input id="f-resolution" value="${esc(x.resolution||'')}" placeholder="12.5 m / 1:50000"></div></div>
+ <div class="form2"><div class="field"><label>坐标系/基准</label><input id="f-crs" value="${esc(x.crs||'')}"></div><div class="field"><label>覆盖范围</label><input id="f-coverage" value="${esc(x.coverage||'')}"></div></div>
+ <div class="form2"><div class="field"><label>当前状态</label><select id="f-status">${['待搜集','已获取','已整理','已核验','已入文','需更新'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>质量检查</label><select id="f-quality">${['未检查','基本可用','已核验','存在问题'].map(s=>`<option ${x.quality===s?'selected':''}>${s}</option>`)}</select></div></div>
+ <div class="form2"><div class="field"><label>论文使用状态</label><select id="f-use">${['未使用','准备使用','已入文','已替换'].map(s=>`<option ${x.useStatus===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>用于章节</label><input id="f-chapter" value="${esc(x.chapter||'')}" placeholder="第3章 / 第4章"></div></div>
+ <div class="field"><label>文件位置</label><input id="f-file" value="${esc(x.fileLocation||'')}" placeholder="例如：D:\\论文\\数据\\DEM\\dem12.5m.tif"></div>
+ <div class="field"><label>来源引用 / 元数据</label><textarea id="f-citation">${esc(x.sourceCitation||'')}</textarea></div>
+ <div class="field"><label>备注 / 数据问题</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
+ <div class="notice">大体积 TIF、SHP、影像等不会复制进 App；这里保存的是数据台账、来源、质量和文件位置。</div>
+ <div class="actions">${id?`<button class="btn danger" onclick="removeItem('dataAssets','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveDataAsset('${id}')">保存</button></div>`);
+}
+function saveDataAsset(id){
+ const old=state.dataAssets.find(x=>x.id===id);
+ const v={id:id||uid(),name:$('#f-name').value.trim(),category:$('#f-category').value,source:$('#f-source').value.trim(),acquiredAt:$('#f-date').value,format:$('#f-format').value.trim(),resolution:$('#f-resolution').value.trim(),crs:$('#f-crs').value.trim(),coverage:$('#f-coverage').value.trim(),status:$('#f-status').value,quality:$('#f-quality').value,useStatus:$('#f-use').value,chapter:$('#f-chapter').value.trim(),fileLocation:$('#f-file').value.trim(),sourceCitation:$('#f-citation').value.trim(),notes:$('#f-notes').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso()};
+ if(!v.name)return alert('请填写数据名称');const i=state.dataAssets.findIndex(x=>x.id===id);if(i>=0)state.dataAssets[i]=v;else state.dataAssets.push(v);closeSheet();save();
+}
+function processingForm(id){
+ const x=state.processingLogs.find(v=>v.id===id)||{title:'',category:'因子提取',input:'',software:'ArcGIS/QGIS',method:'',parameters:'',output:'',status:'待处理',quality:'未核验',useStatus:'未使用',chapter:'',fileLocation:'',reproducible:false,createdAt:iso(),completedAt:'',updatedAt:iso(),notes:''};
+ openSheet(`<h3>${id?'编辑处理记录':'新增数据处理'}</h3>
+ <div class="field"><label>处理事项</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：DEM裁剪并统一至12.5 m分辨率"></div>
+ <div class="form2"><div class="field"><label>处理类型</label><select id="f-category">${['数据清洗','坐标/投影','裁剪','重采样','配准','矢量化','因子提取','距离分析','栅格运算','样本构建','统计分析','模型训练','精度检验','制图','其他'].map(s=>`<option ${x.category===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>软件/工具</label><input id="f-software" value="${esc(x.software||'')}"></div></div>
+ <div class="field"><label>输入数据</label><textarea id="f-input" placeholder="写清用了哪些原始/中间数据">${esc(x.input||'')}</textarea></div>
+ <div class="field"><label>处理方法 / 步骤</label><textarea id="f-method">${esc(x.method||'')}</textarea></div>
+ <div class="field"><label>关键参数</label><textarea id="f-parameters" placeholder="分辨率、阈值、投影、重采样方法、模型参数等">${esc(x.parameters||'')}</textarea></div>
+ <div class="field"><label>输出结果</label><textarea id="f-output">${esc(x.output||'')}</textarea></div>
+ <div class="form2"><div class="field"><label>状态</label><select id="f-status">${['待处理','处理中','已完成','已核验','已入文','需重做'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>质量</label><select id="f-quality">${['未核验','基本可用','已核验','存在问题'].map(s=>`<option ${x.quality===s?'selected':''}>${s}</option>`)}</select></div></div>
+ <div class="form2"><div class="field"><label>论文使用状态</label><select id="f-use">${['未使用','准备使用','已入文','已替换'].map(s=>`<option ${x.useStatus===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>用于章节</label><input id="f-chapter" value="${esc(x.chapter||'')}"></div></div>
+ <div class="field"><label>结果文件位置</label><input id="f-file" value="${esc(x.fileLocation||'')}"></div>
+ <div class="field"><label>可复现性</label><select id="f-repro"><option value="0" ${!x.reproducible?'selected':''}>步骤/参数还不完整</option><option value="1" ${x.reproducible?'selected':''}>可以按记录重新做一遍</option></select></div>
+ <div class="field"><label>备注 / 异常情况</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
+ <div class="actions">${id?`<button class="btn danger" onclick="removeItem('processingLogs','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveProcessing('${id}')">保存</button></div>`);
+}
+function saveProcessing(id){
+ const old=state.processingLogs.find(x=>x.id===id),status=$('#f-status').value;
+ const v={id:id||uid(),title:$('#f-title').value.trim(),category:$('#f-category').value,input:$('#f-input').value.trim(),software:$('#f-software').value.trim(),method:$('#f-method').value.trim(),parameters:$('#f-parameters').value.trim(),output:$('#f-output').value.trim(),status,quality:$('#f-quality').value,useStatus:$('#f-use').value,chapter:$('#f-chapter').value.trim(),fileLocation:$('#f-file').value.trim(),reproducible:$('#f-repro').value==='1',createdAt:old?.createdAt||iso(),completedAt:['已完成','已核验','已入文'].includes(status)?(old?.completedAt||iso()):'',updatedAt:iso(),notes:$('#f-notes').value.trim()};
+ if(!v.title)return alert('请填写处理事项');const i=state.processingLogs.findIndex(x=>x.id===id);if(i>=0)state.processingLogs[i]=v;else state.processingLogs.push(v);closeSheet();save();
+}
+function analysisForm(id){
+ const x=state.analysisResults.find(v=>v.id===id)||{title:'',type:'统计分析',inputs:'',method:'',parameters:'',result:'',metric:'',status:'待分析',quality:'未核验',useStatus:'未使用',version:'V1',chapter:'',fileLocation:'',createdAt:iso(),completedAt:'',updatedAt:iso(),notes:''};
+ openSheet(`<h3>${id?'编辑分析/模型':'新增分析/模型成果'}</h3>
+ <div class="field"><label>成果名称</label><input id="f-title" value="${esc(x.title)}" placeholder="例如：I-RF模型危险性评价结果"></div>
+ <div class="form2"><div class="field"><label>类型</label><select id="f-type">${['统计分析','信息量模型','随机森林','耦合模型','AHP/权重','ROC/AUC','情景分析','稳定性计算','数值模拟','敏感性分析','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>版本</label><input id="f-version" value="${esc(x.version||'V1')}"></div></div>
+ <div class="field"><label>输入数据 / 因子</label><textarea id="f-inputs">${esc(x.inputs||'')}</textarea></div>
+ <div class="field"><label>方法说明</label><textarea id="f-method">${esc(x.method||'')}</textarea></div>
+ <div class="field"><label>关键参数</label><textarea id="f-parameters">${esc(x.parameters||'')}</textarea></div>
+ <div class="field"><label>主要结果 / 结论</label><textarea id="f-result">${esc(x.result||'')}</textarea></div>
+ <div class="field"><label>关键指标</label><input id="f-metric" value="${esc(x.metric||'')}" placeholder="例如：AUC=0.91 / 安全系数=1.23"></div>
+ <div class="form2"><div class="field"><label>状态</label><select id="f-status">${['待分析','分析中','已完成','已核验','已入文','需重做'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>质量</label><select id="f-quality">${['未核验','基本可用','已核验','存在问题'].map(s=>`<option ${x.quality===s?'selected':''}>${s}</option>`)}</select></div></div>
+ <div class="form2"><div class="field"><label>论文使用状态</label><select id="f-use">${['未使用','准备使用','已入文','已替换'].map(s=>`<option ${x.useStatus===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>用于章节</label><input id="f-chapter" value="${esc(x.chapter||'')}"></div></div>
+ <div class="field"><label>结果文件位置</label><input id="f-file" value="${esc(x.fileLocation||'')}"></div>
+ <div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div>
+ <div class="actions">${id?`<button class="btn danger" onclick="removeItem('analysisResults','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveAnalysis('${id}')">保存</button></div>`);
+}
+function saveAnalysis(id){
+ const old=state.analysisResults.find(x=>x.id===id),status=$('#f-status').value;
+ const v={id:id||uid(),title:$('#f-title').value.trim(),type:$('#f-type').value,inputs:$('#f-inputs').value.trim(),method:$('#f-method').value.trim(),parameters:$('#f-parameters').value.trim(),result:$('#f-result').value.trim(),metric:$('#f-metric').value.trim(),status,quality:$('#f-quality').value,useStatus:$('#f-use').value,version:$('#f-version').value.trim(),chapter:$('#f-chapter').value.trim(),fileLocation:$('#f-file').value.trim(),createdAt:old?.createdAt||iso(),completedAt:['已完成','已核验','已入文'].includes(status)?(old?.completedAt||iso()):'',updatedAt:iso(),notes:$('#f-notes').value.trim()};
+ if(!v.title)return alert('请填写成果名称');const i=state.analysisResults.findIndex(x=>x.id===id);if(i>=0)state.analysisResults[i]=v;else state.analysisResults.push(v);closeSheet();save();
+}
 
 function weekData(){const arr=[],now=dateObj(iso()),dow=(now.getDay()+6)%7,mon=new Date(now);mon.setDate(now.getDate()-dow);for(let i=0;i<7;i++){const d=new Date(mon);d.setDate(mon.getDate()+i);const k=localISO(d);arr.push({date:k,label:'一二三四五六日'[i],value:wordsOn(k)})}return arr}
 function monthBuckets(date=iso()){const d0=dateObj(date),y=d0.getFullYear(),m=d0.getMonth(),days=new Date(y,m+1,0).getDate(),b=[0,0,0,0,0,0];state.writingLogs.forEach(x=>{const d=dateObj(x.date);if(d.getFullYear()===y&&d.getMonth()===m){b[Math.min(5,Math.floor((d.getDate()-1)/5))]+=Number(x.words||0)}});return b.map((v,i)=>({label:i<5?`${i*5+1}-${i*5+5}`:`26-${days}`,value:v}))}
@@ -354,10 +545,13 @@ function renderStats(){
  if(statsRange==='week')chart=`<div class="chart-card"><div class="row"><div class="title">本周每日字数</div><div class="meta">单位：字</div></div>${barChart(weekData(),'周')}</div>`;
  if(statsRange==='month')chart=`<div class="chart-card"><div class="row"><div class="title">本月写作趋势</div><div class="meta">每5天汇总</div></div>${barChart(monthBuckets())}</div>${calendarHTML()}`;
  if(statsRange==='year')chart=`<div class="chart-card"><div class="row"><div class="title">${new Date().getFullYear()} 年月度字数</div><div class="meta">单位：字</div></div>${barChart(yearData())}</div>`;
- if(statsRange==='all')chart=`${calendarHTML()}${allStatsHTML()}`;
+ if(statsRange==='all')chart=`${calendarHTML()}${allStatsHTML()}${researchStatsHTML()}`;
  $('#view-stats').innerHTML=`<div class="section-title" style="margin-top:2px"><h2>统计总览</h2><span class="sub">日 / 周 / 月 / 年 / 全部</span></div><div class="segment">${Object.entries(labels).map(([k,v])=>`<button class="${statsRange===k?'active':''}" onclick="statsRange='${k}';renderStats()">${v}</button>`).join('')}</div><div class="summary-grid"><div class="summary"><div class="l">${labels[statsRange]}写作</div><div class="n">${fmt(s.words)}<small>字</small></div></div><div class="summary"><div class="l">专注时长</div><div class="n">${fmt(s.mins)}<small>分</small></div></div><div class="summary"><div class="l">写作会话</div><div class="n">${s.sessions}<small>次</small></div></div><div class="summary"><div class="l">新增/解决问题</div><div class="n">${s.problems}<small> / ${s.solved}</small></div></div><div class="summary"><div class="l">完成待办</div><div class="n">${s.todos}<small>项</small></div></div><div class="summary"><div class="l">连续写作</div><div class="n">${streak()}<small>天</small></div></div></div>${chart}`;
 }
 function allStatsHTML(){const solved=state.problems.filter(x=>x.status==='已解决').length,feedbackDone=state.feedback.filter(x=>x.status==='已完成').length,todoDone=state.todos.filter(x=>x.done).length,figDone=state.figures.filter(x=>x.status==='已完成').length,defenseDone=state.defense.filter(x=>x.status==='已完成').length,focusMinutes=state.focusLogs.reduce((s,x)=>s+Number(x.minutes||0),0),checks=state.finalChecks.filter(x=>x.done).length,eng=state.literature.filter(x=>x.language==='英文').length,cited=state.literature.filter(x=>x.status==='已引用').length,types={};state.problems.forEach(x=>types[x.type||'未分类']=(types[x.type||'未分类']||0)+1);const tmax=Math.max(1,...Object.values(types));return `<div class="section-title"><h2>全模块累计</h2></div><div class="summary-grid"><div class="summary"><div class="l">累计字数</div><div class="n">${fmt(totalWords())}</div></div><div class="summary"><div class="l">累计专注</div><div class="n">${fmt(focusMinutes)}<small>分</small></div></div><div class="summary"><div class="l">问题已解决</div><div class="n">${solved}<small> / ${state.problems.length}</small></div></div><div class="summary"><div class="l">修改已完成</div><div class="n">${feedbackDone}<small> / ${state.feedback.length}</small></div></div><div class="summary"><div class="l">待办已完成</div><div class="n">${todoDone}<small> / ${state.todos.length}</small></div></div><div class="summary"><div class="l">图表已完成</div><div class="n">${figDone}<small> / ${state.figures.length}</small></div></div><div class="summary"><div class="l">文献 / 英文 / 已引</div><div class="n">${state.literature.length}<small> / ${eng} / ${cited}</small></div></div><div class="summary"><div class="l">导师会议</div><div class="n">${state.meetings.length}<small>次</small></div></div><div class="summary"><div class="l">论文版本</div><div class="n">${state.versions.length}<small>版</small></div></div><div class="summary"><div class="l">答辩准备</div><div class="n">${defenseDone}<small> / ${state.defense.length}</small></div></div><div class="summary"><div class="l">定稿检查</div><div class="n">${checks}<small> / ${state.finalChecks.length}</small></div></div><div class="summary"><div class="l">进度预测</div><div class="n" style="font-size:14px">${predictedDate().date==='—'?'暂无':formatDateCN(predictedDate().date)}</div></div></div><div class="section-title"><h2>问题类型分布</h2></div>${Object.keys(types).length?Object.entries(types).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div class="card"><div class="row"><div class="title">${esc(k)}</div><b>${v}</b></div><div class="small-progress"><span style="width:${v/tmax*100}%"></span></div></div>`).join(''):'<div class="empty">记录问题后会自动统计。</div>'}<div class="section-title"><h2>章节完成度</h2></div>${state.chapters.map(c=>`<div class="card"><div class="row"><div class="title">${esc(c.title)}</div><b>${pct(c.currentWords,c.targetWords)}%</b></div><div class="small-progress"><span style="width:${pct(c.currentWords,c.targetWords)}%"></span></div></div>`).join('')}`}
+
+function researchStatsHTML(){const c=researchStatusCounts();return `<div class="section-title"><h2>研究成果累计</h2><span class="sub">数据、处理、分析、图表</span></div><div class="summary-grid"><div class="summary"><div class="l">数据资产</div><div class="n">${state.dataAssets.length}</div></div><div class="summary"><div class="l">已核验数据</div><div class="n">${c.dataChecked}</div></div><div class="summary"><div class="l">处理已完成</div><div class="n">${c.procDone}</div></div><div class="summary"><div class="l">分析已完成</div><div class="n">${c.analysisDone}</div></div><div class="summary"><div class="l">图表已完成</div><div class="n">${c.figDone}</div></div><div class="summary"><div class="l">已入文/引用</div><div class="n">${c.used}</div></div><div class="summary"><div class="l">待核验</div><div class="n">${c.pendingCheck}</div></div><div class="summary"><div class="l">需更新/重做</div><div class="n">${c.redo}</div></div></div>`}
+
 function calendarHTML(){const y=calendarCursor.getFullYear(),m=calendarCursor.getMonth(),first=new Date(y,m,1,12),last=new Date(y,m+1,0,12),start=(first.getDay()+6)%7,days=last.getDate(),vals=[];for(let d=1;d<=days;d++){const k=localISO(new Date(y,m,d,12));vals.push(wordsOn(k))}const max=Math.max(1,...vals);let cells=Array.from({length:start},()=>'<div class="cal-day empty"></div>');for(let d=1;d<=days;d++){const k=localISO(new Date(y,m,d,12)),v=wordsOn(k),r=v/max,lv=v===0?'':r<=.25?'lv1':r<=.5?'lv2':r<=.75?'lv3':'lv4';cells.push(`<button class="cal-day ${lv} ${k===iso()?'today':''}" onclick="dayDetail('${k}')">${d}${v?'<span class="cal-dot"></span>':''}</button>`)}return `<div class="chart-card"><div class="calendar-head"><button onclick="moveCalendar(-1)">‹</button><div class="title">${y}年${m+1}月 · 写作日历</div><button onclick="moveCalendar(1)">›</button></div><div class="calendar-grid">${'一二三四五六日'.split('').map(x=>`<div class="cal-week">${x}</div>`).join('')}${cells.join('')}</div><div class="meta" style="margin-top:8px">颜色越深，写作字数越多。点某一天查看当天全部记录。</div></div>`}
 function moveCalendar(n){calendarCursor.setMonth(calendarCursor.getMonth()+n);renderStats()}
 function dayDetail(date){const logs=state.writingLogs.filter(x=>x.date===date),problems=state.problems.filter(x=>x.createdAt===date||x.resolvedAt===date),feedback=state.feedback.filter(x=>x.createdAt===date||x.completedAt===date),todos=state.todos.filter(x=>x.createdAt===date||x.updatedAt===date),meetings=state.meetings.filter(x=>x.date===date);openSheet(`<h3>${formatDateCN(date)} · 单日详情</h3><div class="mini-grid"><div class="mini-cell"><b>${fmt(wordsOn(date))}</b><span>写作字数</span></div><div class="mini-cell"><b>${minutesOn(date)}</b><span>写作分钟</span></div><div class="mini-cell"><b>${logs.length}</b><span>写作会话</span></div></div><div class="section-title"><h2>写作记录</h2></div>${logs.map(x=>`<div class="section-mini" onclick="writingLogForm('${x.id}')"><div class="title">+${fmt(x.words)} 字 · ${esc(chapterTitle(x.chapterId))}</div><div class="meta">${x.sectionId?esc(sectionTitle(x.chapterId,x.sectionId))+' · ':''}${fmt(x.minutes)} 分钟${x.note?' · '+esc(x.note):''}</div></div>`).join('')||'<div class="empty" style="padding:12px">无写作记录</div>'}<div class="section-title"><h2>其他动态</h2></div>${problems.map(x=>`<div class="section-mini"><div class="title">问题：${esc(x.title)}</div><div class="meta">${x.createdAt===date?'新增':'解决'} · ${esc(x.status)}</div></div>`).join('')}${feedback.map(x=>`<div class="section-mini"><div class="title">修改：${esc(x.title)}</div><div class="meta">${esc(x.status)}</div></div>`).join('')}${todos.map(x=>`<div class="section-mini"><div class="title">待办：${esc(x.title)}</div><div class="meta">${x.done?'已完成':'更新'}</div></div>`).join('')}${meetings.map(x=>`<div class="section-mini"><div class="title">导师会议：${esc(x.topic)}</div></div>`).join('')||(!problems.length&&!feedback.length&&!todos.length&&!meetings.length?'<div class="empty" style="padding:12px">无其他动态</div>':'')}`)}
@@ -388,7 +582,7 @@ function renderSettings(){
    <div class="setting-row"><div class="left"><div class="name">本地存储</div><div class="value">GitHub Pages 只托管程序文件，不上传你的论文记录。仍建议定期把 JSON 备份保存到“文件”或 iCloud Drive。</div></div></div>
   </div>
   <div class="settings-section"><h3>App 信息</h3>
-   <div class="setting-row"><div class="left"><div class="name">学术猫·论文工作台 <span class="version-badge">V4</span></div><div class="value">iPhone Web App · 支持离线缓存 · 底部导航可横向滑动</div></div></div>
+   <div class="setting-row"><div class="left"><div class="name">学术猫·论文工作台 <span class="version-badge">V5</span></div><div class="value">iPhone Web App · 支持离线缓存 · 底部导航可横向滑动 · 数据与研究成果中心</div></div></div>
    <div class="settings-grid"><button class="pill-btn" onclick="clearAppCache()">刷新程序缓存</button><button class="pill-btn" onclick="showUsageHelp()">使用说明</button></div>
   </div>
   <div class="settings-section"><h3 style="color:var(--bad)">危险操作</h3>
@@ -398,7 +592,7 @@ function renderSettings(){
 function quickPrivacySettings(){const s=state.settings;openSheet(`<h3>显示偏好</h3><div class="field"><label>连续写作天数</label><select id="f-countStreak"><option value="1" ${s.countStreak!==false?'selected':''}>开启</option><option value="0" ${s.countStreak===false?'selected':''}>关闭</option></select></div><div class="field"><label>首页显示论文题目</label><select id="f-hideTitle"><option value="0" ${!s.hideThesisTitle?'selected':''}>显示</option><option value="1" ${s.hideThesisTitle?'selected':''}>隐藏</option></select></div><div class="actions"><button class="btn primary" onclick="savePrivacySettings()">保存</button></div>`)}
 function savePrivacySettings(){state.settings.countStreak=$('#f-countStreak').value==='1';state.settings.hideThesisTitle=$('#f-hideTitle').value==='1';closeSheet();save()}
 async function clearAppCache(){if(!confirm('刷新程序缓存不会删除论文记录。确定继续吗？'))return;try{if('caches'in window){for(const k of await caches.keys())await caches.delete(k)}const regs=await navigator.serviceWorker?.getRegistrations?.();if(regs)for(const r of regs)await r.update();alert('程序缓存已清理，即将重新加载。');location.reload()}catch(e){alert('缓存清理未完全完成，可以关闭 App 后重新打开。')}}
-function showUsageHelp(){openSheet(`<h3>使用说明</h3><div class="detail-block"><b>建议工作流</b><p>1. 首页看今天优先事项和论文健康度。\n2. 写作时用“开始写作”，结束后登记字数和时长。\n3. 卡点记到“问题”，解决后补解决结果和复盘。\n4. 导师意见、文献、图表、会议、版本、答辩都放在“资料”。\n5. “统计”查看日/周/月/年/全部；“设置”负责参数、备份和程序管理。</p></div><div class="detail-block"><b>数据安全</b><p>建议每周至少导出一次 JSON，并保存到 iCloud Drive 或电脑。删除网页 App、清理 Safari 网站数据或系统存储清理都可能影响本地记录。</p></div>`)}
+function showUsageHelp(){openSheet(`<h3>使用说明</h3><div class="detail-block"><b>建议工作流</b><p>1. 首页看今天优先事项和论文健康度。\n2. 写作时用“开始写作”，结束后登记字数和时长。\n3. 卡点记到“问题”，解决后补解决结果和复盘。\n4. 数据、处理、分析和图表统一放在“成果”，形成来源→处理→分析→入文链条。\n5. 导师意见、文献、会议、版本、答辩等放在“资料”。\n6. “统计”查看日/周/月/年/全部；“设置”负责参数、备份和程序管理。</p></div><div class="detail-block"><b>数据安全</b><p>建议每周至少导出一次 JSON，并保存到 iCloud Drive 或电脑。删除网页 App、清理 Safari 网站数据或系统存储清理都可能影响本地记录。</p></div>`)}
 function resetAllData(){if(!confirm('第一次确认：真的要清空全部论文数据吗？'))return;if(!confirm('第二次确认：此操作不可撤销。请确认你已经导出 JSON 备份。'))return;localStorage.removeItem(STORAGE_KEY);localStorage.removeItem(SNAPSHOT_KEY);state=clone(defaults);save();alert('全部论文数据已清空。')}
 
 function renderFocus(){
@@ -421,8 +615,8 @@ function todoForm(id){const x=state.todos.find(v=>v.id===id)||{title:'',chapter:
 function saveTodo(id){const old=state.todos.find(x=>x.id===id),done=$('#f-done').value==='1';const v={id:id||uid(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),priority:$('#f-priority').value,due:$('#f-due').value,notes:$('#f-notes').value.trim(),done,createdAt:old?.createdAt||iso(),updatedAt:iso()};if(!v.title)return alert('请填写待办事项');const i=state.todos.findIndex(x=>x.id===id);if(i>=0)state.todos[i]=v;else state.todos.push(v);closeSheet();save()}
 function meetingForm(id){const x=state.meetings.find(v=>v.id===id)||{date:iso(),topic:'',withWhom:'导师',notes:'',actions:'',nextDate:''};openSheet(`<h3>${id?'编辑导师会议':'记录导师会议 / 沟通'}</h3><div class="form2"><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>沟通对象</label><input id="f-with" value="${esc(x.withWhom||'导师')}"></div></div><div class="field"><label>主题</label><input id="f-topic" value="${esc(x.topic)}" placeholder="例如：讨论第4章评价结果"></div><div class="field"><label>会议要点 / 导师原话</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="field"><label>明确的下一步行动</label><textarea id="f-actions">${esc(x.actions||'')}</textarea></div><div class="field"><label>下次沟通日期（可选）</label><input id="f-next" type="date" value="${esc(x.nextDate||'')}"></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('meetings','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveMeeting('${id}')">保存</button></div>`)}
 function saveMeeting(id){const v={id:id||uid(),date:$('#f-date').value,topic:$('#f-topic').value.trim(),withWhom:$('#f-with').value.trim(),notes:$('#f-notes').value.trim(),actions:$('#f-actions').value.trim(),nextDate:$('#f-next').value};if(!v.topic)return alert('请填写会议主题');const i=state.meetings.findIndex(x=>x.id===id);if(i>=0)state.meetings[i]=v;else state.meetings.push(v);closeSheet();save()}
-function figureForm(id){const x=state.figures.find(v=>v.id===id)||{kind:'图',no:'',title:'',chapter:'',status:'待制作',captionChecked:false,citedInText:false,sourceChecked:false,notes:''};openSheet(`<h3>${id?'编辑图表':'新增图表清单'}</h3><div class="form2"><div class="field"><label>类型</label><select id="f-kind"><option ${x.kind==='图'?'selected':''}>图</option><option ${x.kind==='表'?'selected':''}>表</option></select></div><div class="field"><label>编号</label><input id="f-no" value="${esc(x.no)}" placeholder="图3-2"></div></div><div class="field"><label>图表名称</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter)}"></div><div class="field"><label>状态</label><select id="f-status">${['待制作','制作中','待核对','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>检查项</label><select id="f-caption"><option value="0" ${!x.captionChecked?'selected':''}>图题/表题未核对</option><option value="1" ${x.captionChecked?'selected':''}>图题/表题已核对</option></select></div><div class="form2"><div class="field"><label>正文引用</label><select id="f-cited"><option value="0" ${!x.citedInText?'selected':''}>未核对</option><option value="1" ${x.citedInText?'selected':''}>已核对</option></select></div><div class="field"><label>来源/注释</label><select id="f-sourcecheck"><option value="0" ${!x.sourceChecked?'selected':''}>未核对</option><option value="1" ${x.sourceChecked?'selected':''}>已核对</option></select></div></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes)}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('figures','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFigure('${id}')">保存</button></div>`)}
-function saveFigure(id){const v={id:id||uid(),kind:$('#f-kind').value,no:$('#f-no').value.trim(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),status:$('#f-status').value,captionChecked:$('#f-caption').value==='1',citedInText:$('#f-cited').value==='1',sourceChecked:$('#f-sourcecheck').value==='1',notes:$('#f-notes').value.trim()};if(!v.title)return alert('请填写图表名称');const i=state.figures.findIndex(x=>x.id===id);if(i>=0)state.figures[i]=v;else state.figures.push(v);closeSheet();save()}
+function figureForm(id){const old=state.figures.find(v=>v.id===id);const x=old||{kind:'图',no:'',title:'',chapter:'',status:'待制作',captionChecked:false,citedInText:false,sourceChecked:false,sourceAsset:'',fileLocation:'',completedAt:'',notes:''};openSheet(`<h3>${id?'编辑图表':'新增图表成果'}</h3><div class="form2"><div class="field"><label>类型</label><select id="f-kind"><option ${x.kind==='图'?'selected':''}>图</option><option ${x.kind==='表'?'selected':''}>表</option></select></div><div class="field"><label>编号</label><input id="f-no" value="${esc(x.no||'')}" placeholder="图3-2"></div></div><div class="field"><label>图表名称</label><input id="f-title" value="${esc(x.title||'')}"></div><div class="form2"><div class="field"><label>所属章节</label><input id="f-chapter" value="${esc(x.chapter||'')}"></div><div class="field"><label>状态</label><select id="f-status">${['待制作','制作中','待核对','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>依据数据 / 处理结果</label><input id="f-sourceasset" value="${esc(x.sourceAsset||'')}" placeholder="例如：坡度栅格 + 灾害点数据"></div><div class="field"><label>最终文件位置</label><input id="f-file" value="${esc(x.fileLocation||'')}" placeholder="PNG/TIF/AI/PPT等文件位置"></div><div class="field"><label>图题/表题</label><select id="f-caption"><option value="0" ${!x.captionChecked?'selected':''}>未核对</option><option value="1" ${x.captionChecked?'selected':''}>已核对</option></select></div><div class="form2"><div class="field"><label>正文引用</label><select id="f-cited"><option value="0" ${!x.citedInText?'selected':''}>未核对</option><option value="1" ${x.citedInText?'selected':''}>已引用/已核对</option></select></div><div class="field"><label>来源/注释</label><select id="f-sourcecheck"><option value="0" ${!x.sourceChecked?'selected':''}>未核对</option><option value="1" ${x.sourceChecked?'selected':''}>已核对</option></select></div></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('figures','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveFigure('${id}')">保存</button></div>`)}
+function saveFigure(id){const old=state.figures.find(x=>x.id===id),status=$('#f-status').value;const v={id:id||uid(),kind:$('#f-kind').value,no:$('#f-no').value.trim(),title:$('#f-title').value.trim(),chapter:$('#f-chapter').value.trim(),status,captionChecked:$('#f-caption').value==='1',citedInText:$('#f-cited').value==='1',sourceChecked:$('#f-sourcecheck').value==='1',sourceAsset:$('#f-sourceasset').value.trim(),fileLocation:$('#f-file').value.trim(),completedAt:status==='已完成'?(old?.completedAt||iso()):'',notes:$('#f-notes').value.trim()};if(!v.title)return alert('请填写图表名称');const i=state.figures.findIndex(x=>x.id===id);if(i>=0)state.figures[i]=v;else state.figures.push(v);closeSheet();save()}
 function milestoneForm(id){const x=state.milestones.find(v=>v.id===id)||{title:'',date:'',status:'待完成'};openSheet(`<h3>${id?'编辑时间节点':'新增论文节点'}</h3><div class="field"><label>节点名称</label><input id="f-title" value="${esc(x.title)}" placeholder="初稿 / 预答辩 / 送审 / 答辩"></div><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>状态</label><select id="f-status">${['待完成','进行中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('milestones','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveMilestone('${id}')">保存</button></div>`)}
 function saveMilestone(id){const v={id:id||uid(),title:$('#f-title').value.trim(),date:$('#f-date').value,status:$('#f-status').value};if(!v.title)return alert('请填写节点名称');const i=state.milestones.findIndex(x=>x.id===id);if(i>=0)state.milestones[i]=v;else state.milestones.push(v);closeSheet();save()}
 function versionForm(id){const x=state.versions.find(v=>v.id===id)||{name:'',date:iso(),stage:'章节稿',note:'',wordCount:totalWords(),fileLocation:''};openSheet(`<h3>${id?'编辑版本':'新增论文版本'}</h3><div class="field"><label>版本名称</label><input id="f-name" value="${esc(x.name)}" placeholder="例如：V3 导师修改稿"></div><div class="form2"><div class="field"><label>日期</label><input id="f-date" type="date" value="${esc(x.date)}"></div><div class="field"><label>阶段</label><select id="f-stage">${['章节稿','初稿','导师修改稿','预答辩稿','送审稿','答辩稿','定稿','其他'].map(s=>`<option ${x.stage===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>文件位置 / 文件名（可选）</label><input id="f-location" value="${esc(x.fileLocation||'')}" placeholder="例如：iCloud/论文/V3.docx"></div><div class="field"><label>本版本主要变化</label><textarea id="f-note">${esc(x.note||'')}</textarea></div><div class="notice">保存时会自动记录当前论文累计字数：${fmt(totalWords())} 字。</div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('versions','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveVersion('${id}')">保存</button></div>`)}
@@ -433,8 +627,8 @@ function toggleFinalCheck(id,done){const x=state.finalChecks.find(v=>v.id===id);
 function defenseForm(id){const x=state.defense.find(v=>v.id===id)||{title:'',type:'可能提问',status:'待准备',answer:'',notes:'',confidence:1,createdAt:iso(),updatedAt:iso()};openSheet(`<h3>${id?'编辑答辩准备':'新增答辩准备'}</h3><div class="field"><label>事项 / 问题</label><input id="f-title" value="${esc(x.title)}"></div><div class="form2"><div class="field"><label>类型</label><select id="f-type">${['答辩PPT','自我陈述','可能提问','回答要点','材料清单','模拟答辩','其他'].map(s=>`<option ${x.type===s?'selected':''}>${s}</option>`)}</select></div><div class="field"><label>状态</label><select id="f-status">${['待准备','准备中','已完成'].map(s=>`<option ${x.status===s?'selected':''}>${s}</option>`)}</select></div></div><div class="field"><label>熟悉度（1=不熟，5=很稳）</label><select id="f-confidence">${[1,2,3,4,5].map(n=>`<option value="${n}" ${Number(x.confidence)===n?'selected':''}>${n}</option>`)}</select></div><div class="field"><label>回答 / 核心要点</label><textarea id="f-answer">${esc(x.answer||'')}</textarea></div><div class="field"><label>备注</label><textarea id="f-notes">${esc(x.notes||'')}</textarea></div><div class="actions">${id?`<button class="btn danger" onclick="removeItem('defense','${id}')">删除</button>`:''}<button class="btn primary" onclick="saveDefense('${id}')">保存</button></div>`)}
 function saveDefense(id){const old=state.defense.find(x=>x.id===id);const v={id:id||uid(),title:$('#f-title').value.trim(),type:$('#f-type').value,status:$('#f-status').value,confidence:+$('#f-confidence').value||1,answer:$('#f-answer').value.trim(),notes:$('#f-notes').value.trim(),createdAt:old?.createdAt||iso(),updatedAt:iso()};if(!v.title)return alert('请填写答辩事项');const i=state.defense.findIndex(x=>x.id===id);if(i>=0)state.defense[i]=v;else state.defense.push(v);closeSheet();save()}
 
-function globalSearch(){openSheet(`<h3>全局搜索</h3><div class="searchbox"><input id="globalQ" placeholder="搜章节、问题、文献、导师意见、待办、图表……" oninput="runGlobalSearch(this.value)" autofocus></div><div id="searchResults"><div class="empty">输入关键词即可搜索全部论文记录。</div></div>`);setTimeout(()=>$('#globalQ')?.focus(),100)}
-function runGlobalSearch(q){q=String(q||'').trim().toLowerCase();const box=$('#searchResults');if(!q){box.innerHTML='<div class="empty">输入关键词即可搜索全部论文记录。</div>';return}let r=[];const push=(type,title,text,open)=>{if((title+' '+text).toLowerCase().includes(q))r.push({type,title,text,open})};state.chapters.forEach(x=>{push('章节',x.title,x.notes,`chapterDetail('${x.id}')`);(x.sections||[]).forEach(s=>push('小节',s.title,s.notes,`chapterDetail('${x.id}')`))});state.problems.forEach(x=>push('问题',x.title,[x.description,x.method,x.resolution,x.lesson,x.evidence].join(' '),`problemDetail('${x.id}')`));state.literature.forEach(x=>push('文献',x.title,[x.authors,x.tags,x.notes,x.citation,x.usedIn].join(' '),`literatureForm('${x.id}')`));state.feedback.forEach(x=>push('修改',x.title,x.detail,`feedbackForm('${x.id}')`));state.todos.forEach(x=>push('待办',x.title,x.notes,`todoForm('${x.id}')`));state.meetings.forEach(x=>push('会议',x.topic,[x.notes,x.actions].join(' '),`meetingForm('${x.id}')`));state.figures.forEach(x=>push('图表',(x.no||'')+' '+x.title,x.notes,`figureForm('${x.id}')`));state.versions.forEach(x=>push('版本',x.name,x.note,`versionForm('${x.id}')`));state.defense.forEach(x=>push('答辩',x.title,[x.answer,x.notes].join(' '),`defenseForm('${x.id}')`));box.innerHTML=r.length?r.slice(0,40).map(x=>`<div class="card" onclick="closeSheet();setTimeout(()=>${x.open},50)"><div class="row"><div class="title">${esc(x.title)}</div><span class="chip blue">${x.type}</span></div><div class="meta">${esc(x.text||'').slice(0,110)}</div></div>`).join(''):'<div class="empty">没有找到匹配内容。</div>'}
+function globalSearch(){openSheet(`<h3>全局搜索</h3><div class="searchbox"><input id="globalQ" placeholder="搜章节、问题、数据、处理、分析、文献、导师意见、图表……" oninput="runGlobalSearch(this.value)" autofocus></div><div id="searchResults"><div class="empty">输入关键词即可搜索全部论文记录。</div></div>`);setTimeout(()=>$('#globalQ')?.focus(),100)}
+function runGlobalSearch(q){q=String(q||'').trim().toLowerCase();const box=$('#searchResults');if(!q){box.innerHTML='<div class="empty">输入关键词即可搜索全部论文记录。</div>';return}let r=[];const push=(type,title,text,open)=>{if((title+' '+text).toLowerCase().includes(q))r.push({type,title,text,open})};state.chapters.forEach(x=>{push('章节',x.title,x.notes,`chapterDetail('${x.id}')`);(x.sections||[]).forEach(s=>push('小节',s.title,s.notes,`chapterDetail('${x.id}')`))});state.problems.forEach(x=>push('问题',x.title,[x.description,x.method,x.resolution,x.lesson,x.evidence].join(' '),`problemDetail('${x.id}')`));state.literature.forEach(x=>push('文献',x.title,[x.authors,x.tags,x.notes,x.citation,x.usedIn].join(' '),`literatureForm('${x.id}')`));state.feedback.forEach(x=>push('修改',x.title,x.detail,`feedbackForm('${x.id}')`));state.todos.forEach(x=>push('待办',x.title,x.notes,`todoForm('${x.id}')`));state.meetings.forEach(x=>push('会议',x.topic,[x.notes,x.actions].join(' '),`meetingForm('${x.id}')`));state.figures.forEach(x=>push('图表',(x.no||'')+' '+x.title,x.notes,`figureForm('${x.id}')`));state.dataAssets.forEach(x=>push('数据',x.name,[x.category,x.source,x.chapter,x.fileLocation,x.notes].join(' '),`dataAssetForm('${x.id}')`));state.processingLogs.forEach(x=>push('处理',x.title,[x.category,x.software,x.chapter,x.input,x.output,x.parameters,x.notes].join(' '),`processingForm('${x.id}')`));state.analysisResults.forEach(x=>push('分析',x.title,[x.type,x.chapter,x.version,x.metric,x.result,x.notes].join(' '),`analysisForm('${x.id}')`));state.versions.forEach(x=>push('版本',x.name,x.note,`versionForm('${x.id}')`));state.defense.forEach(x=>push('答辩',x.title,[x.answer,x.notes].join(' '),`defenseForm('${x.id}')`));box.innerHTML=r.length?r.slice(0,40).map(x=>`<div class="card" onclick="closeSheet();setTimeout(()=>${x.open},50)"><div class="row"><div class="title">${esc(x.title)}</div><span class="chip blue">${x.type}</span></div><div class="meta">${esc(x.text||'').slice(0,110)}</div></div>`).join(''):'<div class="empty">没有找到匹配内容。</div>'}
 
 function settingsForm(){const s=state.settings;openSheet(`<h3>论文与写作设置</h3>
  <div class="field"><label>论文题目</label><input id="f-thesis" value="${esc(s.thesisTitle)}"></div>
@@ -450,14 +644,14 @@ function settingsForm(){const s=state.settings;openSheet(`<h3>论文与写作设
  <div class="notice">这些参数会影响首页进度、目标、倒计时和完成时间预测。</div><div class="actions"><button class="btn primary" onclick="saveSettings()">保存设置</button></div>`)}
 function saveSettings(){state.settings={...state.settings,thesisTitle:$('#f-thesis').value.trim()||'我的硕士学位论文',school:$('#f-school').value.trim(),degreeType:$('#f-degree').value,currentStage:$('#f-stage').value,totalWordGoal:+$('#f-total').value||80000,dailyWordGoal:+$('#f-daily').value||2000,weeklyWordGoal:+$('#f-weekly').value||10000,startDate:$('#f-start').value,firstDraftDate:$('#f-first').value,submissionDate:$('#f-submit').value,preDefenseDate:$('#f-predef').value,defenseDate:$('#f-defense').value,finalDate:$('#f-final').value,focusMinutes:+$('#f-focus').value||25,breakMinutes:+$('#f-break').value||5,defaultChapterId:$('#f-defaultChapter').value};focusSeconds=state.settings.focusMinutes*60;closeSheet();save()}
 function removeItem(key,id){if(!confirm('确定删除这条记录吗？'))return;state[key]=state[key].filter(x=>x.id!==id);closeSheet();save()}
-function exportBackup(){maybeSnapshot(true);const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文工作台-V4-备份-${iso()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportBackup(){maybeSnapshot(true);const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文工作台-V5-备份-${iso()}.json`;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function importBackup(){const inp=document.createElement('input');inp.type='file';inp.accept='.json,application/json';inp.onchange=()=>{const f=inp.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const v=JSON.parse(r.result);if(!v||typeof v!=='object')throw new Error();if(confirm('导入会覆盖当前数据，确定继续吗？')){maybeSnapshot(true);state=normalize(v);save();alert('导入成功')}}catch(e){alert('备份文件无法读取')}};r.readAsText(f)};inp.click()}
-function exportCSV(){let rows=[['模块','日期','标题','章节/用途','状态','详情']];state.writingLogs.forEach(x=>rows.push(['写作',x.date,`${x.words}字`,chapterTitle(x.chapterId),`${x.minutes}分钟`,x.note||'']));state.problems.forEach(x=>rows.push(['问题',x.createdAt,x.title,x.chapter,x.status,[x.description,x.resolution,x.lesson].join(' | ')]));state.feedback.forEach(x=>rows.push(['修改',x.createdAt,x.title,x.chapter,x.status,x.detail||'']));state.todos.forEach(x=>rows.push(['待办',x.createdAt,x.title,x.chapter,x.done?'已完成':'待完成',x.notes||'']));state.literature.forEach(x=>rows.push(['文献','',x.title,x.usedIn,x.status,[x.authors,x.year,x.language,x.tags].join(' | ')]));state.meetings.forEach(x=>rows.push(['会议',x.date,x.topic,x.withWhom,'',x.actions||x.notes||'']));state.figures.forEach(x=>rows.push(['图表','',`${x.no||''} ${x.title}`,x.chapter,x.status,x.notes||'']));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文数据-${iso()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+function exportCSV(){let rows=[['模块','日期','标题','章节/用途','状态','详情']];state.writingLogs.forEach(x=>rows.push(['写作',x.date,`${x.words}字`,chapterTitle(x.chapterId),`${x.minutes}分钟`,x.note||'']));state.problems.forEach(x=>rows.push(['问题',x.createdAt,x.title,x.chapter,x.status,[x.description,x.resolution,x.lesson].join(' | ')]));state.feedback.forEach(x=>rows.push(['修改',x.createdAt,x.title,x.chapter,x.status,x.detail||'']));state.todos.forEach(x=>rows.push(['待办',x.createdAt,x.title,x.chapter,x.done?'已完成':'待完成',x.notes||'']));state.literature.forEach(x=>rows.push(['文献','',x.title,x.usedIn,x.status,[x.authors,x.year,x.language,x.tags].join(' | ')]));state.meetings.forEach(x=>rows.push(['会议',x.date,x.topic,x.withWhom,'',x.actions||x.notes||'']));state.figures.forEach(x=>rows.push(['图表','',`${x.no||''} ${x.title}`,x.chapter,x.status,x.notes||'']));state.dataAssets.forEach(x=>rows.push(['数据资产',x.acquiredAt||x.createdAt,x.name,x.chapter,x.status,[x.category,x.source,x.format,x.resolution,x.crs,x.quality,x.useStatus,x.fileLocation,x.notes].join(' | ')]));state.processingLogs.forEach(x=>rows.push(['数据处理',x.completedAt||x.createdAt,x.title,x.chapter,x.status,[x.category,x.software,x.input,x.method,x.parameters,x.output,x.quality,x.useStatus,x.fileLocation,x.notes].join(' | ')]));state.analysisResults.forEach(x=>rows.push(['分析模型',x.completedAt||x.createdAt,x.title,x.chapter,x.status,[x.type,x.version,x.inputs,x.method,x.parameters,x.metric,x.result,x.quality,x.useStatus,x.fileLocation,x.notes].join(' | ')]));const csv='\ufeff'+rows.map(r=>r.map(v=>'"'+String(v??'').replace(/"/g,'""')+'"').join(',')).join('\n');const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`学术猫论文数据-${iso()}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 function manualSnapshot(){maybeSnapshot(true);alert('已创建本地历史快照。最多保留最近 6 份。')}
 function snapshotManager(){let arr=[];try{arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]')}catch(e){}openSheet(`<h3>本地历史快照</h3><div class="notice">用于误删或误改后的快速恢复。快照仍保存在本机，不能替代导出到 iCloud/电脑的备份。</div>${arr.map((x,i)=>`<div class="card"><div class="row"><div><div class="title">${esc(x.label||'快照')}</div><div class="meta">${new Date(x.ts).toLocaleString('zh-CN')} · ${fmt((x.state?.chapters||[]).reduce((s,c)=>s+Number(c.currentWords||0),0))}字</div></div><button class="pill-btn" style="padding:7px 9px" onclick="restoreSnapshot('${x.id}')">恢复</button></div></div>`).join('')||'<div class="empty">暂无快照。</div>'}`)}
 function restoreSnapshot(id){let arr=[];try{arr=JSON.parse(localStorage.getItem(SNAPSHOT_KEY)||'[]')}catch(e){}const x=arr.find(v=>v.id===id);if(!x||!confirm('恢复该快照会覆盖当前数据，确定吗？'))return;state=normalize(x.state);save();closeSheet();alert('已恢复快照')}
 
-function renderAll(){renderHome();renderChapters();renderProblems();renderResources();renderStats();renderSettings();renderFocus();$('#fab').onclick=()=>{if(currentView==='chapters')chapterForm();else if(currentView==='problems')problemForm();else if(currentView==='resources'){if(resourceTab==='literature')literatureForm();if(resourceTab==='feedback')feedbackForm();if(resourceTab==='todos')todoForm();if(resourceTab==='meetings')meetingForm();if(resourceTab==='figures')figureForm();if(resourceTab==='milestones')milestoneForm();if(resourceTab==='versions')versionForm();if(resourceTab==='finalcheck')finalCheckForm();if(resourceTab==='defense')defenseForm()}else writingLogForm()}}
+function renderAll(){renderHome();renderChapters();renderProblems();renderOutcomes();renderResources();renderStats();renderSettings();renderFocus();$('#fab').onclick=()=>{if(currentView==='chapters')chapterForm();else if(currentView==='problems')problemForm();else if(currentView==='outcomes'){if(outcomeTab==='data')dataAssetForm();else if(outcomeTab==='process')processingForm();else if(outcomeTab==='analysis')analysisForm();else if(outcomeTab==='figures')figureForm();else dataAssetForm()}else if(currentView==='resources'){if(resourceTab==='literature')literatureForm();if(resourceTab==='feedback')feedbackForm();if(resourceTab==='todos')todoForm();if(resourceTab==='meetings')meetingForm();if(resourceTab==='milestones')milestoneForm();if(resourceTab==='versions')versionForm();if(resourceTab==='finalcheck')finalCheckForm();if(resourceTab==='defense')defenseForm()}else writingLogForm()}}
 $$('.navbtn').forEach(b=>b.onclick=()=>go(b.dataset.view));
 if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}))}
 maybeSnapshot();renderAll();
