@@ -1,7 +1,7 @@
 {
-  "name": "学术猫·论文工作台 V6.4",
+  "name": "学术猫·论文工作台 V6.6",
   "short_name": "学术猫",
-  "description": "硕士论文写作执行、今日路线、问题闭环、文献研究卡、导师会议联动、图表版本、送审与统计管理助手",
+  "description": "硕士论文写作、章节推进、文献图表、导师修改、统计分析与本地数据安全工作台",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
@@ -9,21 +9,8 @@
   "theme_color": "#102e61",
   "orientation": "portrait-primary",
   "icons": [
-    {
-      "src": "icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    },
-    {
-      "src": "icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable any"
-    }
+    {"src":"icon-192.png","sizes":"192x192","type":"image/png"},
+    {"src":"icon-512.png","sizes":"512x512","type":"image/png"},
+    {"src":"icon-maskable-512.png","sizes":"512x512","type":"image/png","purpose":"maskable any"}
   ]
 }
