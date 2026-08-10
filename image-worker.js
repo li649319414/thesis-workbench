@@ -1,0 +1,4 @@
+'use strict';
+async function hashBlob(blob){const buf=await blob.arrayBuffer();const dig=await crypto.subtle.digest('SHA-256',buf);return [...new Uint8Array(dig)].map(b=>b.toString(16).padStart(2,'0')).join('')}
+async function thumb(blob,max=420,quality=.78){if(typeof createImageBitmap!=='function'||typeof OffscreenCanvas==='undefined')return null;const bm=await createImageBitmap(blob);const scale=Math.min(1,max/Math.max(bm.width,bm.height)),w=Math.max(1,Math.round(bm.width*scale)),h=Math.max(1,Math.round(bm.height*scale));const c=new OffscreenCanvas(w,h),ctx=c.getContext('2d');ctx.drawImage(bm,0,0,w,h);bm.close();return await c.convertToBlob({type:'image/jpeg',quality})}
+self.onmessage=async e=>{const {id,blob,max,quality}=e.data||{};try{const [hash,thumbnail]=await Promise.all([hashBlob(blob),thumb(blob,max,quality)]);self.postMessage({id,ok:true,hash,thumbnail})}catch(err){self.postMessage({id,ok:false,error:String(err&&err.message||err)})}};
